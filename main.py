@@ -1,7 +1,11 @@
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
-from base_datos import buscar_estudiante, crear_base_datos
+from base_datos import (
+    buscar_estudiante,
+    crear_base_datos,
+    obtener_horario_por_estudiante,
+)
 
 datos_entrenamiento = [
     # Saludos
@@ -194,6 +198,29 @@ def iniciar_sesion():
 
         return estudiante
 
+def construir_respuesta_horario(matricula):
+    horario = obtener_horario_por_estudiante(matricula)
+
+    if not horario:
+        return (
+            "No encontré un horario registrado "
+            "para este estudiante."
+        )
+
+    lineas = ["Este es tu horario:"]
+
+    for clase in horario:
+        lineas.append(
+            f"- {clase['dia']} "
+            f"{clase['hora_inicio']} - "
+            f"{clase['hora_fin']}: "
+            f"{clase['materia']}, "
+            f"con {clase['profesor']}, "
+            f"en el salón {clase['salon']}."
+        )
+
+    return "\n".join(lineas)
+
 def ejecutar_eduia():
     crear_base_datos()
 
@@ -246,6 +273,11 @@ def ejecutar_eduia():
             respuesta, tipo, categoria, confianza = (
                 buscar_respuesta(pregunta)
             )
+
+            if categoria == "horario":
+                respuesta = construir_respuesta_horario(
+                    estudiante_actual["matricula"]
+                )
 
             print(f"EduIA: {respuesta}")
             print(f"Tipo: {tipo}")
