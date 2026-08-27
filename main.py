@@ -4,7 +4,9 @@ from sklearn.metrics.pairwise import cosine_similarity
 from base_datos import (
     buscar_estudiante,
     crear_base_datos,
+    obtener_asignaciones_por_semestre,
     obtener_horario_por_estudiante,
+    obtener_materias_por_semestre,
 )
 
 datos_entrenamiento = [
@@ -22,8 +24,12 @@ datos_entrenamiento = [
     ("cuál es mi horario", "horario"),
     ("qué horario tengo", "horario"),
     ("qué clases tengo", "horario"),
-    ("qué materias tengo", "horario"),
+    ("qué materias tengo", "materia"),
     ("a qué hora entro", "horario"),
+    ("cuáles son mis materias", "materia"),
+    ("qué materias curso", "materia"),
+    ("lista de materias", "materia"),
+    ("muéstrame mis materias", "materia"),
 
     # Exámenes
     ("cuándo tengo examen", "examen"),
@@ -118,6 +124,7 @@ RESPUESTAS_CATEGORIA = {
         "calificaciones, avisos y temas académicos."
     ),
     "horario": "Puedo consultar tu horario escolar.",
+    "materia": "Puedo consultar tus materias inscritas.",
     "examen": "Puedo consultar las fechas de tus exámenes.",
     "profesor": "Puedo mostrarte la información de tus profesores.",
     "calificacion": "Puedo consultar tus calificaciones.",
@@ -133,6 +140,7 @@ TIPOS_CATEGORIA = {
     "saludo": "general",
     "capacidades": "general",
     "horario": "escolar",
+    "materia": "escolar",
     "examen": "escolar",
     "profesor": "escolar",
     "calificacion": "escolar",
@@ -221,6 +229,51 @@ def construir_respuesta_horario(matricula):
 
     return "\n".join(lineas)
 
+def construir_respuesta_materias(semestre):
+    materias = obtener_materias_por_semestre(semestre)
+
+    if not materias:
+        return (
+            "No encontré materias registradas "
+            "para tu semestre."
+        )
+
+    lineas = [
+        f"Tus materias de {semestre}.º semestre son:"
+    ]
+
+    for materia in materias:
+        lineas.append(
+            f"{materia['orden']}. {materia['nombre']}"
+        )
+
+    return "\n".join(lineas)
+
+def construir_respuesta_profesores(semestre):
+    asignaciones = obtener_asignaciones_por_semestre(
+        semestre
+    )
+
+    if not asignaciones:
+        return (
+            "No encontré profesores asignados "
+            "para tu semestre."
+        )
+
+    lineas = [
+        "Estos son tus profesores:"
+    ]
+
+    for asignacion in asignaciones:
+        lineas.append(
+            f"- {asignacion['materia']}: "
+            f"{asignacion['profesor']} "
+            f"({asignacion['especialidad']}). "
+            f"Correo: {asignacion['correo']}."
+        )
+
+    return "\n".join(lineas)
+
 def ejecutar_eduia():
     crear_base_datos()
 
@@ -277,6 +330,16 @@ def ejecutar_eduia():
             if categoria == "horario":
                 respuesta = construir_respuesta_horario(
                     estudiante_actual["matricula"]
+                )
+
+            elif categoria == "materia":
+                respuesta = construir_respuesta_materias(
+                    estudiante_actual["semestre"]
+                )
+
+            elif categoria == "profesor":
+                respuesta = construir_respuesta_profesores(
+                    estudiante_actual["semestre"]
                 )
 
             print(f"EduIA: {respuesta}")
