@@ -128,6 +128,81 @@ MATERIAS_POR_SEMESTRE = {
     ],
 }
 
+PROFESORES_INICIALES = [
+    (
+        "P001",
+        "Mariana López Vargas",
+        "mariana.lopez@eduia.edu.mx",
+        "Programación",
+    ),
+    (
+        "P002",
+        "Roberto Hernández Silva",
+        "roberto.hernandez@eduia.edu.mx",
+        "Sistemas Digitales",
+    ),
+    (
+        "P003",
+        "Claudia Ramírez Soto",
+        "claudia.ramirez@eduia.edu.mx",
+        "Matemáticas",
+    ),
+    (
+        "P004",
+        "Fernando Torres Méndez",
+        "fernando.torres@eduia.edu.mx",
+        "Electrónica",
+    ),
+    (
+        "P005",
+        "Patricia Gómez Lara",
+        "patricia.gomez@eduia.edu.mx",
+        "Comunicación y Humanidades",
+    ),
+    (
+        "P006",
+        "Alejandro Ruiz Ortega",
+        "alejandro.ruiz@eduia.edu.mx",
+        "Idiomas",
+    ),
+    (
+        "P007",
+        "Verónica Castillo Núñez",
+        "veronica.castillo@eduia.edu.mx",
+        "Bases de Datos e Ingeniería de Software",
+    ),
+    (
+        "P008",
+        "Miguel Ángel Navarro Cruz",
+        "miguel.navarro@eduia.edu.mx",
+        "Redes de Computadoras",
+    ),
+    (
+        "P009",
+        "Gabriela Mendoza Reyes",
+        "gabriela.mendoza@eduia.edu.mx",
+        "Sistemas Embebidos",
+    ),
+    (
+        "P010",
+        "Ricardo Salazar Campos",
+        "ricardo.salazar@eduia.edu.mx",
+        "Inteligencia Artificial",
+    ),
+    (
+        "P011",
+        "Daniela Pérez Fuentes",
+        "daniela.perez@eduia.edu.mx",
+        "Administración e Investigación",
+    ),
+    (
+        "P012",
+        "Jorge Alberto Vega Morales",
+        "jorge.vega@eduia.edu.mx",
+        "Infraestructura y Cómputo",
+    ),
+]
+
 def conectar():
     CARPETA_DATOS.mkdir(exist_ok=True)
 
@@ -166,6 +241,18 @@ def crear_base_datos():
             """
         )
 
+        conexion.execute(
+            """
+            CREATE TABLE IF NOT EXISTS profesores (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                numero_empleado TEXT NOT NULL UNIQUE,
+                nombre TEXT NOT NULL,
+                correo TEXT NOT NULL UNIQUE,
+                especialidad TEXT NOT NULL
+            )
+            """
+        )
+
         conexion.executemany(
             """
             INSERT OR IGNORE INTO estudiantes (
@@ -196,6 +283,19 @@ def crear_base_datos():
             VALUES (?, ?, ?)
             """,
             materias_iniciales,
+        )
+
+        conexion.executemany(
+            """
+            INSERT OR IGNORE INTO profesores (
+                numero_empleado,
+                nombre,
+                correo,
+                especialidad
+            )
+            VALUES (?, ?, ?, ?)
+            """,
+            PROFESORES_INICIALES,
         )
 
         conexion.commit()
@@ -256,6 +356,25 @@ def contar_materias():
 
     return resultado[0]
 
+def obtener_profesores():
+    with closing(conectar()) as conexion:
+        conexion.row_factory = sqlite3.Row
+
+        profesores = conexion.execute(
+            """
+            SELECT
+                id,
+                numero_empleado,
+                nombre,
+                correo,
+                especialidad
+            FROM profesores
+            ORDER BY numero_empleado
+            """
+        ).fetchall()
+
+    return [dict(profesor) for profesor in profesores]
+
 if __name__ == "__main__":
     crear_base_datos()
 
@@ -288,3 +407,17 @@ if __name__ == "__main__":
             f"\nTotal de materias registradas: "
             f"{contar_materias()}"
         )
+
+        profesores = obtener_profesores()
+
+        print(
+            f"\nProfesores registrados: "
+            f"{len(profesores)}"
+        )
+
+        for profesor in profesores:
+            print(
+                f"{profesor['numero_empleado']} - "
+                f"{profesor['nombre']} - "
+                f"{profesor['especialidad']}"
+            )
