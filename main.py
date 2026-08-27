@@ -1,6 +1,8 @@
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
+from base_datos import buscar_estudiante, crear_base_datos
+
 datos_entrenamiento = [
     # Saludos
     ("hola", "saludo"),
@@ -162,22 +164,94 @@ def buscar_respuesta(pregunta_usuario):
 
     return respuesta, tipo, categoria, confianza
 
-print("====================================")
-print(" ASISTENTE VIRTUAL UNIVERSITARIO")
-print("           EduIA                 ")
-print("====================================")
-print("Hola, soy EduIA, tu asistente virtual.")
+def iniciar_sesion():
+    print("\nINICIO DE SESIÓN")
 
-while True:
-    pregunta = input("Escribe tu pregunta: ")
+    while True:
+        matricula = input(
+            "Escribe tu matrícula o 'salir': "
+        ).strip()
 
-    if pregunta.lower() == "salir":
-        print("Hasta luego.")
-        break
+        if matricula.casefold() == "salir":
+            return None
 
-    respuesta, tipo, categoria, confianza = buscar_respuesta(pregunta)
+        if not matricula:
+            print("La matrícula no puede quedar vacía.")
+            continue
 
-    print(f"EduIA: {respuesta}")
-    print(f"Tipo: {tipo}")
-    print(f"Categoría: {categoria}")
-    print(f"Confianza: {confianza:.0%}")
+        estudiante = buscar_estudiante(matricula)
+
+        if estudiante is None:
+            print("No se encontró un estudiante con esa matrícula.")
+            print("Inténtalo nuevamente.")
+            continue
+
+        print("\nEstudiante identificado correctamente.")
+        print(f"Nombre: {estudiante['nombre']}")
+        print(f"Carrera: {estudiante['carrera']}")
+        print(f"Semestre: {estudiante['semestre']}")
+        print(f"Grupo: {estudiante['grupo']}")
+
+        return estudiante
+
+def ejecutar_eduia():
+    crear_base_datos()
+
+    print("====================================")
+    print(" ASISTENTE VIRTUAL UNIVERSITARIO")
+    print("             EduIA")
+    print("====================================")
+    print("Hola, soy EduIA, tu asistente virtual.")
+
+    while True:
+        estudiante_actual = iniciar_sesion()
+
+        if estudiante_actual is None:
+            print("Hasta luego.")
+            return
+
+        print(
+            f"\nBienvenido, {estudiante_actual['nombre']}."
+        )
+        print(
+            "Puedes escribir 'cerrar sesión' para cambiar "
+            "de estudiante."
+        )
+        print("También puedes escribir 'salir' para terminar.")
+
+        while True:
+            pregunta = input(
+                "\nEscribe tu pregunta: "
+            ).strip()
+
+            comando = pregunta.casefold()
+
+            if comando == "salir":
+                print("Hasta luego.")
+                return
+
+            if comando in {
+                "cerrar sesión",
+                "cerrar sesion",
+                "cambiar sesión",
+                "cambiar sesion",
+            }:
+                print("La sesión se cerró correctamente.")
+                break
+
+            if not pregunta:
+                print("Escribe una pregunta para continuar.")
+                continue
+
+            respuesta, tipo, categoria, confianza = (
+                buscar_respuesta(pregunta)
+            )
+
+            print(f"EduIA: {respuesta}")
+            print(f"Tipo: {tipo}")
+            print(f"Categoría: {categoria}")
+            print(f"Confianza: {confianza:.0%}")
+
+
+if __name__ == "__main__":
+    ejecutar_eduia()
