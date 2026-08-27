@@ -1,0 +1,23 @@
+# Entorno virtual de Python
+.venv/
+venv/
+
+# Archivos temporales de Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Variables privadas
+.env
+
+# Base de datos generada
+data/*.db
+data/*.sqlite
+data/*.sqlite3
+
+# Configuración local de VS Code
+.vscode/
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
