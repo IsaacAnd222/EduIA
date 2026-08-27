@@ -203,6 +203,43 @@ PROFESORES_INICIALES = [
     ),
 ]
 
+ASIGNACIONES_INICIALES = [
+    # Primer semestre
+    ("Análisis y Diseño de Algoritmos", "P001"),
+    ("Introducción a la Ingeniería en Sistemas Digitales","P002"),
+    ("Álgebra Lineal", "P003"),
+    ("Geometría Analítica", "P003"),
+    ("Química", "P004"),
+    ("Comunicación Oral y Escrita", "P005"),
+    ("Inglés I", "P006"),
+
+    # Tercer semestre
+    ("Estructuras de Datos", "P001"),
+    ("Diseño de Bases de Datos", "P007"),
+    ("Sistemas Digitales I", "P002"),
+    ("Electricidad y Magnetismo", "P004"),
+    ("Cálculo Diferencial e Integral", "P003"),
+    ("Comunicación Organizacional", "P005"),
+    ("Inglés III", "P006"),
+
+    # Quinto semestre
+    ("Administración de Sistemas Operativos", "P012"),
+    ("Ingeniería del Software", "P007"),
+    ("Circuitos Eléctricos II", "P004"),
+    ("Electrónica Analógica", "P004"),
+    ("Cálculo Vectorial", "P003"),
+    ("Emprendimiento e Innovación", "P011"),
+    ("Metodología de la Investigación", "P011"),
+
+    # Séptimo semestre
+    ("Negocios Electrónicos", "P011"),
+    ("Redes de Computadoras II", "P008"),
+    ("Sistemas Embebidos", "P009"),
+    ("Inteligencia Artificial", "P010"),
+    ("Investigación de Operaciones", "P010"),
+    ("Seminario de Titulación", "P011"),
+]
+
 def conectar():
     CARPETA_DATOS.mkdir(exist_ok=True)
 
@@ -253,6 +290,22 @@ def crear_base_datos():
             """
         )
 
+        conexion.execute(
+            """
+            CREATE TABLE IF NOT EXISTS asignaciones (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                materia_id INTEGER NOT NULL,
+                profesor_id INTEGER NOT NULL,
+                grupo TEXT NOT NULL,
+                FOREIGN KEY (materia_id)
+                    REFERENCES materias (id),
+                FOREIGN KEY (profesor_id)
+                    REFERENCES profesores (id),
+                UNIQUE (materia_id, grupo)
+            )
+            """
+        )
+
         conexion.executemany(
             """
             INSERT OR IGNORE INTO estudiantes (
@@ -297,6 +350,63 @@ def crear_base_datos():
             """,
             PROFESORES_INICIALES,
         )
+
+        for nombre_materia, numero_empleado in (
+            ASIGNACIONES_INICIALES
+        ):
+            materia = conexion.execute(
+                """
+                SELECT
+                    id,
+                    semestre
+                FROM materias
+                WHERE nombre = ?
+                """,
+                (nombre_materia,),
+            ).fetchone()
+
+            profesor = conexion.execute(
+                """
+                SELECT id
+                FROM profesores
+                WHERE numero_empleado = ?
+                """,
+                (numero_empleado,),
+            ).fetchone()
+
+            if materia is None:
+                raise ValueError(
+                    f"No existe la materia: {nombre_materia}"
+                )
+
+            if profesor is None:
+                raise ValueError(
+                    f"No existe el profesor: {numero_empleado}"
+                )
+
+            materia_id = materia[0]
+            semestre = materia[1]
+            profesor_id = profesor[0]
+            grupo = f"{semestre}A"
+
+            conexion.execute(
+                """
+                INSERT INTO asignaciones (
+                    materia_id,
+                    profesor_id,
+                    grupo
+                )
+                VALUES (?, ?, ?)
+                ON CONFLICT (materia_id, grupo)
+                DO UPDATE SET
+                    profesor_id = excluded.profesor_id
+                """,
+                (
+                    materia_id,
+                    profesor_id,
+                    grupo,
+                ),
+            )
 
         conexion.commit()
 
@@ -375,6 +485,50 @@ def obtener_profesores():
 
     return [dict(profesor) for profesor in profesores]
 
+def obtener_asignaciones_por_semestre(semestre):
+    with closing(conectar()) as conexion:
+        conexion.row_factory = sqlite3.Row
+
+        asignaciones = conexion.execute(
+            """
+            SELECT
+                a.id,
+                m.nombre AS materia,
+                m.semestre,
+                m.orden,
+                a.grupo,
+                p.numero_empleado,
+                p.nombre AS profesor,
+                p.correo,
+                p.especialidad
+            FROM asignaciones AS a
+            INNER JOIN materias AS m
+                ON m.id = a.materia_id
+            INNER JOIN profesores AS p
+                ON p.id = a.profesor_id
+            WHERE m.semestre = ?
+            ORDER BY m.orden
+            """,
+            (semestre,),
+        ).fetchall()
+
+    return [
+        dict(asignacion)
+        for asignacion in asignaciones
+    ]
+
+
+def contar_asignaciones():
+    with closing(conectar()) as conexion:
+        resultado = conexion.execute(
+            """
+            SELECT COUNT(*)
+            FROM asignaciones
+            """
+        ).fetchone()
+
+    return resultado[0]
+
 if __name__ == "__main__":
     crear_base_datos()
 
@@ -421,3 +575,24 @@ if __name__ == "__main__":
                 f"{profesor['nombre']} - "
                 f"{profesor['especialidad']}"
             )
+
+        asignaciones = (
+            obtener_asignaciones_por_semestre(semestre)
+        )
+
+        print(
+            f"\nAsignaciones de {semestre}.º semestre:"
+        )
+
+        for asignacion in asignaciones:
+            print(
+                f"{asignacion['orden']}. "
+                f"{asignacion['materia']} - "
+                f"{asignacion['profesor']} - "
+                f"Grupo {asignacion['grupo']}"
+            )
+
+        print(
+            f"\nTotal de asignaciones registradas: "
+            f"{contar_asignaciones()}"
+        )
