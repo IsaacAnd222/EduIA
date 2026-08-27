@@ -54,12 +54,87 @@ ESTUDIANTES_INICIALES = [
     ),
 ]
 
+MATERIAS_POR_SEMESTRE = {
+    1: [
+        "Análisis y Diseño de Algoritmos",
+        "Introducción a la Ingeniería en Sistemas Digitales",
+        "Álgebra Lineal",
+        "Geometría Analítica",
+        "Química",
+        "Comunicación Oral y Escrita",
+        "Inglés I",
+    ],
+    2: [
+        "Programación Orientada a Objetos",
+        "Arquitectura de Computadoras",
+        "Diseño Asistido por Computadora",
+        "Matemáticas Discretas",
+        "Física",
+        "Ética Profesional",
+        "Estrategias de Aprendizaje",
+        "Inglés II",
+    ],
+    3: [
+        "Estructuras de Datos",
+        "Diseño de Bases de Datos",
+        "Sistemas Digitales I",
+        "Electricidad y Magnetismo",
+        "Cálculo Diferencial e Integral",
+        "Comunicación Organizacional",
+        "Inglés III",
+    ],
+    4: [
+        "Desarrollo de Aplicaciones con Base de Datos",
+        "Sistemas Digitales II",
+        "Circuitos Eléctricos I",
+        "Ecuaciones Diferenciales Ordinarias",
+        "Probabilidad y Estadística",
+        "Derecho Informático",
+        "Responsabilidad Social",
+        "Inglés IV",
+    ],
+    5: [
+        "Administración de Sistemas Operativos",
+        "Ingeniería del Software",
+        "Circuitos Eléctricos II",
+        "Electrónica Analógica",
+        "Cálculo Vectorial",
+        "Emprendimiento e Innovación",
+        "Metodología de la Investigación",
+    ],
+    6: [
+        "Programación Web",
+        "Redes de Computadoras I",
+        "Electrónica Digital",
+        "Microprocesadores y Microcontroladores",
+        "Métodos Numéricos",
+        "Diseño de Empresas",
+        "Habilidades Directivas",
+    ],
+    7: [
+        "Negocios Electrónicos",
+        "Redes de Computadoras II",
+        "Sistemas Embebidos",
+        "Inteligencia Artificial",
+        "Investigación de Operaciones",
+        "Seminario de Titulación",
+    ],
+    8: [
+        "Cómputo en la Nube",
+        "Bases de Datos Multidimensionales",
+        "Dispositivos Lógicos Programables",
+        "Electrónica de Potencia",
+        "Desarrollo Sustentable",
+    ],
+}
 
 def conectar():
     CARPETA_DATOS.mkdir(exist_ok=True)
 
-    return sqlite3.connect(RUTA_BASE_DATOS)
+    conexion = sqlite3.connect(RUTA_BASE_DATOS)
+    conexion.execute("PRAGMA foreign_keys = ON")
 
+    return conexion
 
 def crear_base_datos():
     with closing(conectar()) as conexion:
@@ -76,6 +151,21 @@ def crear_base_datos():
             """
         )
 
+        conexion.execute(
+            """
+            CREATE TABLE IF NOT EXISTS materias (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                nombre TEXT NOT NULL,
+                semestre INTEGER NOT NULL
+                    CHECK (semestre BETWEEN 1 AND 8),
+                orden INTEGER NOT NULL
+                    CHECK (orden > 0),
+                UNIQUE (semestre, nombre),
+                UNIQUE (semestre, orden)
+            )
+            """
+        )
+
         conexion.executemany(
             """
             INSERT OR IGNORE INTO estudiantes (
@@ -88,6 +178,24 @@ def crear_base_datos():
             VALUES (?, ?, ?, ?, ?)
             """,
             ESTUDIANTES_INICIALES,
+        )
+
+        materias_iniciales = [
+            (nombre, semestre, orden)
+            for semestre, materias in MATERIAS_POR_SEMESTRE.items()
+            for orden, nombre in enumerate(materias, start=1)
+        ]
+
+        conexion.executemany(
+            """
+            INSERT OR IGNORE INTO materias (
+                nombre,
+                semestre,
+                orden
+            )
+            VALUES (?, ?, ?)
+            """,
+            materias_iniciales,
         )
 
         conexion.commit()
@@ -116,6 +224,37 @@ def buscar_estudiante(matricula):
 
     return dict(estudiante)
 
+def obtener_materias_por_semestre(semestre):
+    with closing(conectar()) as conexion:
+        conexion.row_factory = sqlite3.Row
+
+        materias = conexion.execute(
+            """
+            SELECT
+                id,
+                nombre,
+                semestre,
+                orden
+            FROM materias
+            WHERE semestre = ?
+            ORDER BY orden
+            """,
+            (semestre,),
+        ).fetchall()
+
+    return [dict(materia) for materia in materias]
+
+
+def contar_materias():
+    with closing(conectar()) as conexion:
+        resultado = conexion.execute(
+            """
+            SELECT COUNT(*)
+            FROM materias
+            """
+        ).fetchone()
+
+    return resultado[0]
 
 if __name__ == "__main__":
     crear_base_datos()
@@ -134,3 +273,18 @@ if __name__ == "__main__":
         print(f"Carrera: {estudiante_encontrado['carrera']}")
         print(f"Semestre: {estudiante_encontrado['semestre']}")
         print(f"Grupo: {estudiante_encontrado['grupo']}")
+
+        semestre = estudiante_encontrado["semestre"]
+        materias = obtener_materias_por_semestre(semestre)
+
+        print(f"\nMaterias de {semestre}.º semestre:")
+
+        for materia in materias:
+            print(
+                f"{materia['orden']}. {materia['nombre']}"
+            )
+
+        print(
+            f"\nTotal de materias registradas: "
+            f"{contar_materias()}"
+        )
