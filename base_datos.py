@@ -240,6 +240,35 @@ ASIGNACIONES_INICIALES = [
     ("Seminario de Titulación", "P011"),
 ]
 
+BLOQUES_MATUTINOS = [
+    ("Lunes", "07:00", "09:00"),
+    ("Lunes", "09:00", "11:00"),
+    ("Martes", "07:00", "09:00"),
+    ("Martes", "09:00", "11:00"),
+    ("Miércoles", "07:00", "09:00"),
+    ("Jueves", "07:00", "09:00"),
+    ("Viernes", "07:00", "09:00"),
+    ("Viernes", "09:00", "11:00"),
+]
+
+BLOQUES_VESPERTINOS = [
+    ("Lunes", "13:00", "15:00"),
+    ("Lunes", "15:00", "17:00"),
+    ("Martes", "13:00", "15:00"),
+    ("Martes", "15:00", "17:00"),
+    ("Miércoles", "13:00", "15:00"),
+    ("Jueves", "13:00", "15:00"),
+    ("Viernes", "13:00", "15:00"),
+    ("Viernes", "15:00", "17:00"),
+]
+
+BLOQUES_POR_SEMESTRE = {
+    1: BLOQUES_MATUTINOS,
+    3: BLOQUES_VESPERTINOS,
+    5: BLOQUES_MATUTINOS,
+    7: BLOQUES_VESPERTINOS,
+}
+
 def conectar():
     CARPETA_DATOS.mkdir(exist_ok=True)
 
@@ -302,6 +331,33 @@ def crear_base_datos():
                 FOREIGN KEY (profesor_id)
                     REFERENCES profesores (id),
                 UNIQUE (materia_id, grupo)
+            )
+            """
+        )
+
+        conexion.execute(
+            """
+            CREATE TABLE IF NOT EXISTS horarios (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                asignacion_id INTEGER NOT NULL UNIQUE,
+                dia TEXT NOT NULL
+                    CHECK (
+                        dia IN (
+                            'Lunes',
+                            'Martes',
+                            'Miércoles',
+                            'Jueves',
+                            'Viernes'
+                        )
+                    ),
+                hora_inicio TEXT NOT NULL,
+                hora_fin TEXT NOT NULL,
+                salon TEXT NOT NULL,
+                FOREIGN KEY (asignacion_id)
+                    REFERENCES asignaciones (id)
+                    ON DELETE CASCADE,
+                CHECK (hora_fin > hora_inicio),
+                UNIQUE (salon, dia, hora_inicio)
             )
             """
         )
@@ -405,6 +461,122 @@ def crear_base_datos():
                     materia_id,
                     profesor_id,
                     grupo,
+                ),
+            )
+
+        asignaciones = conexion.execute(
+            """
+            SELECT
+                a.id,
+                a.profesor_id,
+                a.grupo,
+                m.semestre,
+                m.orden
+            FROM asignaciones AS a
+            INNER JOIN materias AS m
+                ON m.id = a.materia_id
+            ORDER BY
+                m.semestre,
+                m.orden
+            """
+        ).fetchall()
+
+        for asignacion in asignaciones:
+            asignacion_id = asignacion[0]
+            profesor_id = asignacion[1]
+            grupo = asignacion[2]
+            semestre = asignacion[3]
+            orden = asignacion[4]
+
+            bloques = BLOQUES_POR_SEMESTRE.get(semestre)
+
+            if bloques is None:
+                continue
+
+            if orden > len(bloques):
+                raise ValueError(
+                    f"No existe un bloque para el orden {orden}"
+                )
+
+            dia, hora_inicio, hora_fin = bloques[orden - 1]
+            salon = f"A-{semestre}{orden:02d}"
+
+            conflicto_grupo = conexion.execute(
+                """
+                SELECT h.id
+                FROM horarios AS h
+                INNER JOIN asignaciones AS a
+                    ON a.id = h.asignacion_id
+                WHERE a.grupo = ?
+                    AND h.dia = ?
+                    AND h.asignacion_id != ?
+                    AND h.hora_inicio < ?
+                    AND h.hora_fin > ?
+                """,
+                (
+                    grupo,
+                    dia,
+                    asignacion_id,
+                    hora_fin,
+                    hora_inicio,
+                ),
+            ).fetchone()
+
+            if conflicto_grupo is not None:
+                raise ValueError(
+                    f"Choque de horario para el grupo {grupo}"
+                )
+
+            conflicto_profesor = conexion.execute(
+                """
+                SELECT h.id
+                FROM horarios AS h
+                INNER JOIN asignaciones AS a
+                    ON a.id = h.asignacion_id
+                WHERE a.profesor_id = ?
+                    AND h.dia = ?
+                    AND h.asignacion_id != ?
+                    AND h.hora_inicio < ?
+                    AND h.hora_fin > ?
+                """,
+                (
+                    profesor_id,
+                    dia,
+                    asignacion_id,
+                    hora_fin,
+                    hora_inicio,
+                ),
+            ).fetchone()
+
+            if conflicto_profesor is not None:
+                raise ValueError(
+                    "Un profesor tiene dos clases "
+                    "en el mismo horario."
+                )
+
+            conexion.execute(
+                """
+                INSERT INTO horarios (
+                    asignacion_id,
+                    dia,
+                    hora_inicio,
+                    hora_fin,
+                    salon
+                )
+                VALUES (?, ?, ?, ?, ?)
+                ON CONFLICT (asignacion_id)
+                DO UPDATE SET
+                    dia = excluded.dia,
+                    hora_inicio = excluded.hora_inicio,
+                    hora_fin = excluded.hora_fin,
+                    salon = excluded.salon
+                """,
+                (
+                    asignacion_id,
+                    dia,
+                    hora_inicio,
+                    hora_fin,
+                    salon,
                 ),
             )
 
@@ -517,13 +689,66 @@ def obtener_asignaciones_por_semestre(semestre):
         for asignacion in asignaciones
     ]
 
-
 def contar_asignaciones():
     with closing(conectar()) as conexion:
         resultado = conexion.execute(
             """
             SELECT COUNT(*)
             FROM asignaciones
+            """
+        ).fetchone()
+
+    return resultado[0]
+
+def obtener_horario_por_estudiante(matricula):
+    with closing(conectar()) as conexion:
+        conexion.row_factory = sqlite3.Row
+
+        horario = conexion.execute(
+            """
+            SELECT
+                h.dia,
+                h.hora_inicio,
+                h.hora_fin,
+                h.salon,
+                m.nombre AS materia,
+                p.nombre AS profesor,
+                a.grupo
+            FROM estudiantes AS e
+            INNER JOIN asignaciones AS a
+                ON a.grupo = e.grupo
+            INNER JOIN materias AS m
+                ON m.id = a.materia_id
+            INNER JOIN profesores AS p
+                ON p.id = a.profesor_id
+            INNER JOIN horarios AS h
+                ON h.asignacion_id = a.id
+            WHERE e.matricula = ?
+            ORDER BY
+                CASE h.dia
+                    WHEN 'Lunes' THEN 1
+                    WHEN 'Martes' THEN 2
+                    WHEN 'Miércoles' THEN 3
+                    WHEN 'Jueves' THEN 4
+                    WHEN 'Viernes' THEN 5
+                END,
+                h.hora_inicio
+            """,
+            (matricula,),
+        ).fetchall()
+
+    return [
+        dict(clase)
+        for clase in horario
+    ]
+
+
+def contar_horarios():
+    with closing(conectar()) as conexion:
+        resultado = conexion.execute(
+            """
+            SELECT COUNT(*)
+            FROM horarios
             """
         ).fetchone()
 
@@ -595,4 +820,28 @@ if __name__ == "__main__":
         print(
             f"\nTotal de asignaciones registradas: "
             f"{contar_asignaciones()}"
+        )
+
+        horario = obtener_horario_por_estudiante(
+            matricula_ingresada
+        )
+
+        print(
+            f"\nHorario de "
+            f"{estudiante_encontrado['nombre']}:"
+        )
+
+        for clase in horario:
+            print(
+                f"{clase['dia']} "
+                f"{clase['hora_inicio']} - "
+                f"{clase['hora_fin']} | "
+                f"{clase['materia']} | "
+                f"{clase['profesor']} | "
+                f"Salón {clase['salon']}"
+            )
+
+        print(
+            f"\nTotal de horarios registrados: "
+            f"{contar_horarios()}"
         )
