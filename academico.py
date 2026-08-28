@@ -85,10 +85,21 @@ def buscar_contenido_academico(pregunta):
     )
 
 
-def listar_temas_disponibles():
+def listar_temas_disponibles(semestre_estudiante=None):
     contenidos = obtener_contenidos_academicos()
 
-    lineas = ["Puedo ayudarte con estos temas:"]
+    if semestre_estudiante is not None:
+        contenidos_recomendados = [
+            contenido
+            for contenido in contenidos
+            if contenido["semestre_recomendado"]
+            == semestre_estudiante
+        ]
+
+        if contenidos_recomendados:
+            contenidos = contenidos_recomendados
+
+    lineas = ["Te recomiendo comenzar con estos temas:"]
 
     for contenido in contenidos:
         lineas.append(
@@ -99,7 +110,10 @@ def listar_temas_disponibles():
     return "\n".join(lineas)
 
 
-def responder_consulta_academica(pregunta):
+def responder_consulta_academica(
+    pregunta,
+    semestre_estudiante=None,
+):
     contenido, confianza = (
         buscar_contenido_academico(pregunta)
     )
@@ -108,7 +122,7 @@ def responder_consulta_academica(pregunta):
         respuesta = (
             "No identifiqué un tema académico "
             "específico.\n"
-            f"{listar_temas_disponibles()}"
+            f"{listar_temas_disponibles(semestre_estudiante)}"
         )
 
         return respuesta, confianza, None
@@ -116,10 +130,6 @@ def responder_consulta_academica(pregunta):
     lineas = [
         f"Tema: {contenido['tema']}",
         f"Materia: {contenido['materia']}",
-        (
-            "Semestre recomendado: "
-            f"{contenido['semestre_recomendado']}.º"
-        ),
         "",
         f"Explicación: {contenido['explicacion']}",
         "",

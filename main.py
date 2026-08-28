@@ -468,7 +468,10 @@ def ejecutar_eduia():
 
             elif categoria == "academica":
                 respuesta_academica, confianza_tema, tema_academico = (
-                    responder_consulta_academica(pregunta)
+                    responder_consulta_academica(
+                        pregunta,
+                        estudiante_actual["semestre"],
+                    )
                 )
 
                 respuesta = respuesta_academica
