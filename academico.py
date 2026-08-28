@@ -211,7 +211,6 @@ def responder_consulta_academica(
     return respuesta, confianza, contenido["tema"]
 
 
-
 if __name__ == "__main__":
     crear_base_datos()
 
