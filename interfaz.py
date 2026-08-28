@@ -1,5 +1,6 @@
 import customtkinter as ctk
 
+from eduia import procesar_consulta
 from base_datos import (
     buscar_estudiante,
     crear_base_datos,
@@ -467,19 +468,49 @@ class AplicacionEduIA(ctk.CTk):
         if not consulta:
             return
 
+        comando = consulta.casefold()
+
+        if comando == "salir":
+            self.destroy()
+            return
+
+        if comando in {
+            "cerrar sesión",
+            "cerrar sesion",
+            "cerrar secion",
+            "cambiar sesión",
+            "cambiar sesion",
+            "cambiar secion",
+        }:
+            self.cerrar_sesion()
+            return
+
         self.agregar_mensaje(
             "Tú",
             consulta,
         )
         self.entrada_consulta.delete(0, "end")
 
+        (
+            respuesta,
+            tipo,
+            categoria,
+            confianza,
+        ) = procesar_consulta(
+            consulta,
+            self.estudiante_actual,
+        )
+
+        respuesta_completa = (
+            f"{respuesta}\n\n"
+            f"Tipo: {tipo}\n"
+            f"Categoría: {categoria}\n"
+            f"Confianza: {confianza:.0%}"
+        )
+
         self.agregar_mensaje(
             "EduIA",
-            (
-                "Recibí tu consulta correctamente. "
-                "En el siguiente paso la conectaremos "
-                "con el clasificador."
-            ),
+            respuesta_completa,
         )
 
     def nuevo_chat(self):
