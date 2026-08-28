@@ -375,6 +375,186 @@ AVISOS_INICIALES = [
     ),
 ]
 
+CONTENIDOS_ACADEMICOS = [
+    (
+        "C001",
+        "Pseudocódigo",
+        "Análisis y Diseño de Algoritmos",
+        (
+            "pseudocódigo, algoritmo, variables, "
+            "condicional, ciclo, diagrama de flujo"
+        ),
+        (
+            "El pseudocódigo describe un algoritmo "
+            "mediante instrucciones ordenadas y fáciles "
+            "de comprender, sin depender de la sintaxis "
+            "de un lenguaje de programación."
+        ),
+        (
+            "Para sumar dos números: leer A y B, "
+            "calcular SUMA = A + B y mostrar SUMA."
+        ),
+        (
+            "Diseña un pseudocódigo que lea tres "
+            "calificaciones, calcule el promedio e "
+            "indique si el estudiante aprobó."
+        ),
+        1,
+    ),
+    (
+        "C002",
+        "Modelo relacional",
+        "Diseño de Bases de Datos",
+        (
+            "modelo relacional, tabla, atributo, "
+            "registro, llave primaria, llave foránea"
+        ),
+        (
+            "El modelo relacional organiza la información "
+            "en tablas. Cada fila representa un registro, "
+            "cada columna representa un atributo y las "
+            "llaves permiten relacionar tablas."
+        ),
+        (
+            "La tabla estudiantes utiliza matrícula como "
+            "llave primaria. La tabla inscripciones utiliza "
+            "esa matrícula como llave foránea."
+        ),
+        (
+            "Diseña las tablas necesarias para relacionar "
+            "clientes, pedidos y productos, indicando sus "
+            "llaves primarias y foráneas."
+        ),
+        3,
+    ),
+    (
+        "C003",
+        "Planificación Round Robin",
+        "Administración de Sistemas Operativos",
+        (
+            "round robin, planificación, procesos, "
+            "quantum, cola, cpu"
+        ),
+        (
+            "Round Robin asigna a cada proceso un intervalo "
+            "llamado quantum. Cuando el tiempo termina, el "
+            "proceso vuelve al final de la cola si todavía "
+            "no ha finalizado."
+        ),
+        (
+            "Con quantum 2, los procesos P1=5 y P2=3 "
+            "se ejecutan: P1(2), P2(2), P1(2), "
+            "P2(1) y P1(1)."
+        ),
+        (
+            "Simula Round Robin con quantum 3 para los "
+            "procesos P1=7, P2=4 y P3=5."
+        ),
+        5,
+    ),
+    (
+        "C004",
+        "Ciclo de vida del software",
+        "Ingeniería del Software",
+        (
+            "ciclo de vida, requisitos, análisis, diseño, "
+            "desarrollo, pruebas, mantenimiento"
+        ),
+        (
+            "El ciclo de vida del software organiza un "
+            "proyecto en etapas: requisitos, análisis, "
+            "diseño, desarrollo, pruebas, implementación "
+            "y mantenimiento."
+        ),
+        (
+            "En EduIA primero se definieron las consultas, "
+            "después se diseñó la base de datos, se programó "
+            "la lógica y finalmente se realizaron pruebas."
+        ),
+        (
+            "Describe las etapas que seguirías para crear "
+            "un sistema de control escolar."
+        ),
+        5,
+    ),
+    (
+        "C005",
+        "TF-IDF y similitud del coseno",
+        "Inteligencia Artificial",
+        (
+            "tf-idf, similitud del coseno, vectorizador, "
+            "texto, palabras, clasificación"
+        ),
+        (
+            "TF-IDF convierte documentos en vectores "
+            "numéricos y asigna mayor importancia a las "
+            "palabras representativas. La similitud del "
+            "coseno compara la dirección de esos vectores."
+        ),
+        (
+            "EduIA transforma una pregunta del estudiante "
+            "y la compara con ejemplos conocidos. La "
+            "categoría con mayor similitud se selecciona "
+            "si supera el nivel de confianza."
+        ),
+        (
+            "Escribe tres formas diferentes de preguntar "
+            "por un horario y explica qué palabras serían "
+            "más importantes para clasificarlas."
+        ),
+        7,
+    ),
+    (
+        "C006",
+        "RTOS",
+        "Sistemas Embebidos",
+        (
+            "rtos, tiempo real, tarea, prioridad, "
+            "interrupción, semáforo, scheduler"
+        ),
+        (
+            "Un RTOS es un sistema operativo diseñado para "
+            "ejecutar tareas con tiempos de respuesta "
+            "predecibles. Utiliza prioridades, planificación "
+            "y mecanismos de comunicación entre tareas."
+        ),
+        (
+            "Una tarea lee un sensor cada 100 ms, otra "
+            "actualiza una pantalla y una interrupción "
+            "atiende una alarma de alta prioridad."
+        ),
+        (
+            "Propón tres tareas para un sistema de control "
+            "de temperatura e indica su prioridad."
+        ),
+        7,
+    ),
+    (
+        "C007",
+        "Método de Newton-Raphson",
+        "Métodos Numéricos",
+        (
+            "newton-raphson, método numérico, raíz, "
+            "función, derivada, iteración"
+        ),
+        (
+            "Newton-Raphson aproxima una raíz utilizando "
+            "la fórmula x siguiente = x actual menos "
+            "f(x actual) dividida entre su derivada. "
+            "El proceso se repite hasta reducir el error."
+        ),
+        (
+            "Para f(x)=x²-2 y x inicial=1.5, se sustituye "
+            "en la fórmula para aproximar la raíz de 2."
+        ),
+        (
+            "Realiza dos iteraciones de Newton-Raphson "
+            "para f(x)=x²-4, usando x inicial=3."
+        ),
+        6,
+    ),
+]
+
 def conectar():
     CARPETA_DATOS.mkdir(exist_ok=True)
 
@@ -562,6 +742,26 @@ def crear_base_datos():
                     semestre IS NULL
                     OR semestre BETWEEN 1 AND 8
                 )
+            )
+            """
+        )
+
+        conexion.execute(
+            """
+            CREATE TABLE IF NOT EXISTS contenido_academico (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                codigo TEXT NOT NULL UNIQUE,
+                tema TEXT NOT NULL UNIQUE,
+                materia TEXT NOT NULL,
+                palabras_clave TEXT NOT NULL,
+                explicacion TEXT NOT NULL,
+                ejemplo TEXT NOT NULL,
+                ejercicio TEXT NOT NULL,
+                semestre_recomendado INTEGER NOT NULL
+                    CHECK (
+                        semestre_recomendado
+                        BETWEEN 1 AND 8
+                    )
             )
             """
         )
@@ -979,6 +1179,34 @@ def crear_base_datos():
             AVISOS_INICIALES,
         )
 
+        conexion.executemany(
+            """
+            INSERT INTO contenido_academico (
+                codigo,
+                tema,
+                materia,
+                palabras_clave,
+                explicacion,
+                ejemplo,
+                ejercicio,
+                semestre_recomendado
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT (codigo)
+            DO UPDATE SET
+                tema = excluded.tema,
+                materia = excluded.materia,
+                palabras_clave =
+                    excluded.palabras_clave,
+                explicacion = excluded.explicacion,
+                ejemplo = excluded.ejemplo,
+                ejercicio = excluded.ejercicio,
+                semestre_recomendado =
+                    excluded.semestre_recomendado
+            """,
+            CONTENIDOS_ACADEMICOS,
+        )
+
         conexion.commit()
 
 
@@ -1362,6 +1590,43 @@ def contar_avisos():
 
     return resultado[0]
 
+def obtener_contenidos_academicos():
+    with closing(conectar()) as conexion:
+        conexion.row_factory = sqlite3.Row
+
+        contenidos = conexion.execute(
+            """
+            SELECT
+                codigo,
+                tema,
+                materia,
+                palabras_clave,
+                explicacion,
+                ejemplo,
+                ejercicio,
+                semestre_recomendado
+            FROM contenido_academico
+            ORDER BY codigo
+            """
+        ).fetchall()
+
+    return [
+        dict(contenido)
+        for contenido in contenidos
+    ]
+
+
+def contar_contenidos_academicos():
+    with closing(conectar()) as conexion:
+        resultado = conexion.execute(
+            """
+            SELECT COUNT(*)
+            FROM contenido_academico
+            """
+        ).fetchone()
+
+    return resultado[0]
+
 if __name__ == "__main__":
     crear_base_datos()
 
@@ -1579,4 +1844,22 @@ if __name__ == "__main__":
         print(
             f"\nTotal de avisos registrados: "
             f"{contar_avisos()}"
+        )
+
+        contenidos = obtener_contenidos_academicos()
+
+        print("\nContenidos académicos disponibles:")
+
+        for contenido in contenidos:
+            print(
+                f"- {contenido['codigo']} | "
+                f"{contenido['tema']} | "
+                f"{contenido['materia']} | "
+                f"Semestre recomendado: "
+                f"{contenido['semestre_recomendado']}"
+            )
+
+        print(
+            f"\nTotal de contenidos académicos: "
+            f"{contar_contenidos_academicos()}"
         )

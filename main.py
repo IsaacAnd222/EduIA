@@ -13,6 +13,7 @@ from base_datos import (
     obtener_horario_por_estudiante,
     obtener_materias_por_semestre,
 )
+from academico import responder_consulta_academica
 
 datos_entrenamiento = [
     # Saludos
@@ -464,6 +465,18 @@ def ejecutar_eduia():
                 respuesta = construir_respuesta_avisos(
                     estudiante_actual["matricula"]
                 )
+
+            elif categoria == "academica":
+                respuesta_academica, confianza_tema, tema_academico = (
+                    responder_consulta_academica(pregunta)
+                )
+
+                respuesta = respuesta_academica
+
+                if tema_academico is not None:
+                    respuesta += f"\nTema identificado: {tema_academico}"
+
+                respuesta += f"\nConfianza del tema académico: {confianza_tema:.0%}"
 
             print(f"EduIA: {respuesta}")
             print(f"Tipo: {tipo}")
