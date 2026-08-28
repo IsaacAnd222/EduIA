@@ -1,8 +1,9 @@
+import unicodedata
+
 from sklearn.feature_extraction.text import (
     TfidfVectorizer,
 )
 from sklearn.metrics.pairwise import cosine_similarity
-
 from base_datos import (
     crear_base_datos,
     obtener_contenidos_academicos,
@@ -109,6 +110,45 @@ def listar_temas_disponibles(semestre_estudiante=None):
 
     return "\n".join(lineas)
 
+def normalizar_texto(texto):
+    texto = unicodedata.normalize(
+        "NFD",
+        texto.casefold(),
+    )
+
+    return "".join(
+        caracter
+        for caracter in texto
+        if unicodedata.category(caracter) != "Mn"
+    )
+
+
+def identificar_tipo_solicitud(pregunta):
+    pregunta_normalizada = normalizar_texto(pregunta)
+
+    if any(
+        palabra in pregunta_normalizada
+        for palabra in (
+            "ejercicio",
+            "practica",
+            "problema",
+        )
+    ):
+        return "ejercicio"
+
+    if "ejemplo" in pregunta_normalizada:
+        return "ejemplo"
+
+    if any(
+        palabra in pregunta_normalizada
+        for palabra in (
+            "resumen",
+            "resume",
+        )
+    ):
+        return "resumen"
+
+    return "completa"
 
 def responder_consulta_academica(
     pregunta,
@@ -127,20 +167,49 @@ def responder_consulta_academica(
 
         return respuesta, confianza, None
 
+    tipo_solicitud = identificar_tipo_solicitud(
+        pregunta
+    )
+
     lineas = [
         f"Tema: {contenido['tema']}",
         f"Materia: {contenido['materia']}",
         "",
-        f"Explicación: {contenido['explicacion']}",
-        "",
-        f"Ejemplo: {contenido['ejemplo']}",
-        "",
-        f"Ejercicio: {contenido['ejercicio']}",
     ]
+
+    if tipo_solicitud == "ejemplo":
+        lineas.append(
+            f"Ejemplo: {contenido['ejemplo']}"
+        )
+
+    elif tipo_solicitud == "ejercicio":
+        lineas.append(
+            f"Ejercicio: {contenido['ejercicio']}"
+        )
+
+    elif tipo_solicitud == "resumen":
+        lineas.append(
+            f"Resumen: {contenido['explicacion']}"
+        )
+
+    else:
+        lineas.extend(
+            [
+                (
+                    "Explicación: "
+                    f"{contenido['explicacion']}"
+                ),
+                "",
+                f"Ejemplo: {contenido['ejemplo']}",
+                "",
+                f"Ejercicio: {contenido['ejercicio']}",
+            ]
+        )
 
     respuesta = "\n".join(lineas)
 
     return respuesta, confianza, contenido["tema"]
+
 
 
 if __name__ == "__main__":
