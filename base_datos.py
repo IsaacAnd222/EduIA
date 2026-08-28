@@ -1,6 +1,7 @@
 import sqlite3
 
 from contextlib import closing
+from datetime import date, timedelta
 from pathlib import Path
 
 
@@ -288,6 +289,23 @@ CALIFICACIONES_GENERALES = [
     (7.2, 6.9, 7.6),
 ]
 
+FECHAS_BASE_EXAMENES = {
+    1: date(2026, 9, 14),
+    2: date(2026, 10, 19),
+    3: date(2026, 11, 23),
+}
+
+DESPLAZAMIENTOS_EXAMEN = [
+    0,
+    1,
+    2,
+    3,
+    4,
+    7,
+    8,
+    9,
+]
+
 def conectar():
     CARPETA_DATOS.mkdir(exist_ok=True)
 
@@ -434,6 +452,27 @@ def crear_base_datos():
                 FOREIGN KEY (inscripcion_id)
                     REFERENCES inscripciones (id)
                     ON DELETE CASCADE
+            )
+            """
+        )
+
+        conexion.execute(
+            """
+            CREATE TABLE IF NOT EXISTS examenes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                asignacion_id INTEGER NOT NULL,
+                parcial INTEGER NOT NULL
+                    CHECK (parcial BETWEEN 1 AND 3),
+                fecha TEXT NOT NULL,
+                hora TEXT NOT NULL,
+                salon TEXT NOT NULL,
+                FOREIGN KEY (asignacion_id)
+                    REFERENCES asignaciones (id)
+                    ON DELETE CASCADE,
+                UNIQUE (
+                    asignacion_id,
+                    parcial
+                )
             )
             """
         )
@@ -762,6 +801,70 @@ def crear_base_datos():
                 ),
             )
 
+        asignaciones_examen = conexion.execute(
+            """
+            SELECT
+                a.id,
+                m.orden,
+                h.hora_inicio,
+                h.salon
+            FROM asignaciones AS a
+            INNER JOIN materias AS m
+                ON m.id = a.materia_id
+            INNER JOIN horarios AS h
+                ON h.asignacion_id = a.id
+            ORDER BY
+                m.semestre,
+                m.orden
+            """
+        ).fetchall()
+
+        for asignacion in asignaciones_examen:
+            asignacion_id = asignacion[0]
+            orden = asignacion[1]
+            hora = asignacion[2]
+            salon = asignacion[3]
+
+            desplazamiento = (
+                DESPLAZAMIENTOS_EXAMEN[orden - 1]
+            )
+
+            for parcial, fecha_base in (
+                FECHAS_BASE_EXAMENES.items()
+            ):
+                fecha_examen = (
+                    fecha_base
+                    + timedelta(days=desplazamiento)
+                ).isoformat()
+
+                conexion.execute(
+                    """
+                    INSERT INTO examenes (
+                        asignacion_id,
+                        parcial,
+                        fecha,
+                        hora,
+                        salon
+                    )
+                    VALUES (?, ?, ?, ?, ?)
+                    ON CONFLICT (
+                        asignacion_id,
+                        parcial
+                    )
+                    DO UPDATE SET
+                        fecha = excluded.fecha,
+                        hora = excluded.hora,
+                        salon = excluded.salon
+                    """,
+                    (
+                        asignacion_id,
+                        parcial,
+                        fecha_examen,
+                        hora,
+                        salon,
+                    ),
+                )
+
         conexion.commit()
 
 
@@ -1051,6 +1154,55 @@ def contar_calificaciones():
 
     return resultado[0]
 
+def obtener_examenes_por_estudiante(matricula):
+    with closing(conectar()) as conexion:
+        conexion.row_factory = sqlite3.Row
+
+        examenes = conexion.execute(
+            """
+            SELECT
+                m.nombre AS materia,
+                m.orden,
+                ex.parcial,
+                ex.fecha,
+                ex.hora,
+                ex.salon,
+                p.nombre AS profesor
+            FROM examenes AS ex
+            INNER JOIN asignaciones AS a
+                ON a.id = ex.asignacion_id
+            INNER JOIN inscripciones AS i
+                ON i.asignacion_id = a.id
+            INNER JOIN materias AS m
+                ON m.id = a.materia_id
+            INNER JOIN profesores AS p
+                ON p.id = a.profesor_id
+            WHERE i.estudiante_matricula = ?
+            ORDER BY
+                ex.fecha,
+                ex.hora,
+                m.orden
+            """,
+            (matricula,),
+        ).fetchall()
+
+    return [
+        dict(examen)
+        for examen in examenes
+    ]
+
+
+def contar_examenes():
+    with closing(conectar()) as conexion:
+        resultado = conexion.execute(
+            """
+            SELECT COUNT(*)
+            FROM examenes
+            """
+        ).fetchone()
+
+    return resultado[0]
+
 if __name__ == "__main__":
     crear_base_datos()
 
@@ -1215,4 +1367,28 @@ if __name__ == "__main__":
         print(
             f"\nTotal de calificaciones registradas: "
             f"{contar_calificaciones()}"
+        )
+
+        examenes = obtener_examenes_por_estudiante(
+            matricula_ingresada
+        )
+
+        print(
+            f"\nExámenes de "
+            f"{estudiante_encontrado['nombre']}: "
+            f"{len(examenes)}"
+        )
+
+        for examen in examenes:
+            print(
+                f"- Parcial {examen['parcial']} | "
+                f"{examen['fecha']} | "
+                f"{examen['hora']} | "
+                f"{examen['materia']} | "
+                f"Salón {examen['salon']}"
+            )
+
+        print(
+            f"\nTotal de exámenes registrados: "
+            f"{contar_examenes()}"
         )

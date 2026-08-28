@@ -1,3 +1,5 @@
+from datetime import date
+
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
@@ -6,6 +8,7 @@ from base_datos import (
     crear_base_datos,
     obtener_asignaciones_por_semestre,
     obtener_calificaciones_por_estudiante,
+    obtener_examenes_por_estudiante,
     obtener_horario_por_estudiante,
     obtener_materias_por_semestre,
 )
@@ -315,6 +318,33 @@ def construir_respuesta_calificaciones(matricula):
 
     return "\n".join(lineas)
 
+def construir_respuesta_examenes(matricula):
+    examenes = obtener_examenes_por_estudiante(
+        matricula
+    )
+
+    if not examenes:
+        return (
+            "No encontré exámenes registrados "
+            "para este estudiante."
+        )
+
+    lineas = ["Estos son tus exámenes:"]
+
+    for examen in examenes:
+        fecha = date.fromisoformat(
+            examen["fecha"]
+        ).strftime("%d/%m/%Y")
+
+        lineas.append(
+            f"- Parcial {examen['parcial']} de "
+            f"{examen['materia']}: "
+            f"{fecha}, a las {examen['hora']}, "
+            f"en el salón {examen['salon']}."
+        )
+
+    return "\n".join(lineas)
+
 def ejecutar_eduia():
     crear_base_datos()
 
@@ -388,6 +418,11 @@ def ejecutar_eduia():
                     construir_respuesta_calificaciones(
                         estudiante_actual["matricula"]
                     )
+                )
+
+            elif categoria == "examen":
+                respuesta = construir_respuesta_examenes(
+                    estudiante_actual["matricula"]
                 )
 
             print(f"EduIA: {respuesta}")
