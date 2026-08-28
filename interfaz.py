@@ -1,11 +1,7 @@
 import customtkinter as ctk
 
 from eduia import procesar_consulta
-from base_datos import (
-    buscar_estudiante,
-    crear_base_datos,
-)
-
+from base_datos import buscar_estudiante
 
 COLOR_FONDO = "#F4FAF6"
 COLOR_TARJETA = "#FFFFFF"
@@ -37,6 +33,7 @@ class AplicacionEduIA(ctk.CTk):
         self.etiqueta_error = None
         self.contenedor_mensajes = None
         self.entrada_consulta = None
+        self.animacion_id = None
 
         self.mostrar_acceso()
 
@@ -402,7 +399,12 @@ class AplicacionEduIA(ctk.CTk):
         self.nuevo_chat()
         self.entrada_consulta.focus_set()
 
-    def agregar_mensaje(self, remitente, mensaje):
+    def agregar_mensaje(
+        self,
+        remitente,
+        mensaje,
+        animar=False,
+    ):
         fila = ctk.CTkFrame(
             self.contenedor_mensajes,
             fg_color="transparent",
@@ -446,19 +448,75 @@ class AplicacionEduIA(ctk.CTk):
             pady=(11, 2),
         )
 
-        ctk.CTkLabel(
+        etiqueta_mensaje = ctk.CTkLabel(
             burbuja,
-            text=mensaje,
+            text="" if animar else mensaje,
             wraplength=570,
             justify="left",
             anchor="w",
             text_color=COLOR_TEXTO,
             font=ctk.CTkFont(size=14),
-        ).pack(
+        )
+        etiqueta_mensaje.pack(
             fill="x",
             padx=16,
             pady=(0, 12),
         )
+
+        self.after(
+            10,
+            self.desplazar_al_final,
+        )
+
+        if animar:
+            self.escribir_letra_por_letra(
+                etiqueta_mensaje,
+                mensaje,
+            )
+
+    def desplazar_al_final(self):
+        if self.contenedor_mensajes is None:
+            return
+
+        self.update_idletasks()
+
+        self.contenedor_mensajes._parent_canvas.yview_moveto(
+            1.0
+        )
+
+    def escribir_letra_por_letra(
+        self,
+        etiqueta,
+        mensaje,
+        indice=1,
+    ):
+        if indice > len(mensaje):
+            self.animacion_id = None
+            self.desplazar_al_final()
+            return
+
+        etiqueta.configure(
+            text=mensaje[:indice]
+        )
+
+        if indice % 8 == 0:
+            self.desplazar_al_final()
+
+        self.animacion_id = self.after(
+            8,
+            lambda: self.escribir_letra_por_letra(
+                etiqueta,
+                mensaje,
+                indice + 1,
+            ),
+        )
+
+    def cancelar_animacion(self):
+        if self.animacion_id is None:
+            return
+
+        self.after_cancel(self.animacion_id)
+        self.animacion_id = None
 
     def enviar_consulta(self, evento=None):
         consulta = (
@@ -511,9 +569,12 @@ class AplicacionEduIA(ctk.CTk):
         self.agregar_mensaje(
             "EduIA",
             respuesta_completa,
+            animar=True,
         )
 
     def nuevo_chat(self):
+        self.cancelar_animacion()
+        
         if self.contenedor_mensajes is None:
             return
 
@@ -535,12 +596,6 @@ class AplicacionEduIA(ctk.CTk):
         )
 
     def cerrar_sesion(self):
+        self.cancelar_animacion()
         self.estudiante_actual = None
         self.mostrar_acceso()
-
-
-if __name__ == "__main__":
-    crear_base_datos()
-
-    aplicacion = AplicacionEduIA()
-    aplicacion.mainloop()
