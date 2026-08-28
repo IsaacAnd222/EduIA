@@ -7,6 +7,7 @@ from base_datos import (
     buscar_estudiante,
     crear_base_datos,
     obtener_asignaciones_por_semestre,
+    obtener_avisos_por_estudiante,
     obtener_calificaciones_por_estudiante,
     obtener_examenes_por_estudiante,
     obtener_horario_por_estudiante,
@@ -345,6 +346,38 @@ def construir_respuesta_examenes(matricula):
 
     return "\n".join(lineas)
 
+def construir_respuesta_avisos(matricula):
+    avisos = obtener_avisos_por_estudiante(
+        matricula
+    )
+
+    if not avisos:
+        return (
+            "No hay avisos escolares disponibles "
+            "para este estudiante."
+        )
+
+    lineas = ["Estos son tus avisos escolares:"]
+
+    for aviso in avisos:
+        fecha = date.fromisoformat(
+            aviso["fecha_evento"]
+        ).strftime("%d/%m/%Y")
+
+        if aviso["semestre"] is None:
+            alcance = "aviso general"
+        else:
+            alcance = (
+                f"aviso de {aviso['semestre']}.º semestre"
+            )
+
+        lineas.append(
+            f"- {aviso['titulo']} ({fecha}, "
+            f"{alcance}): {aviso['mensaje']}"
+        )
+
+    return "\n".join(lineas)
+
 def ejecutar_eduia():
     crear_base_datos()
 
@@ -384,8 +417,10 @@ def ejecutar_eduia():
             if comando in {
                 "cerrar sesión",
                 "cerrar sesion",
+                "cerrar secion",
                 "cambiar sesión",
                 "cambiar sesion",
+                "cambiar secion",
             }:
                 print("La sesión se cerró correctamente.")
                 break
@@ -422,6 +457,11 @@ def ejecutar_eduia():
 
             elif categoria == "examen":
                 respuesta = construir_respuesta_examenes(
+                    estudiante_actual["matricula"]
+                )
+
+            elif categoria == "aviso":
+                respuesta = construir_respuesta_avisos(
                     estudiante_actual["matricula"]
                 )
 

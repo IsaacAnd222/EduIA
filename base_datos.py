@@ -306,6 +306,75 @@ DESPLAZAMIENTOS_EXAMEN = [
     9,
 ]
 
+AVISOS_INICIALES = [
+    (
+        "A001",
+        "Registro a talleres extracurriculares",
+        (
+            "Ya está disponible el registro para "
+            "los talleres académicos y culturales."
+        ),
+        "2026-08-25",
+        "2026-09-05",
+        None,
+    ),
+    (
+        "A002",
+        "Mantenimiento de la plataforma escolar",
+        (
+            "La plataforma escolar estará en "
+            "mantenimiento durante la mañana."
+        ),
+        "2026-08-27",
+        "2026-09-12",
+        None,
+    ),
+    (
+        "A003",
+        "Acompañamiento para primer semestre",
+        (
+            "Se realizará una sesión de orientación "
+            "para estudiantes de nuevo ingreso."
+        ),
+        "2026-08-26",
+        "2026-09-04",
+        1,
+    ),
+    (
+        "A004",
+        "Práctica integradora de Sistemas Digitales I",
+        (
+            "El grupo de tercer semestre realizará "
+            "una práctica integradora en laboratorio."
+        ),
+        "2026-08-26",
+        "2026-09-18",
+        3,
+    ),
+    (
+        "A005",
+        "Feria de emprendimiento e innovación",
+        (
+            "Los estudiantes de quinto semestre "
+            "presentarán sus propuestas de negocio."
+        ),
+        "2026-08-26",
+        "2026-09-24",
+        5,
+    ),
+    (
+        "A006",
+        "Avance de Seminario de Titulación",
+        (
+            "El grupo de séptimo semestre deberá "
+            "presentar su primer avance de proyecto."
+        ),
+        "2026-08-26",
+        "2026-09-21",
+        7,
+    ),
+]
+
 def conectar():
     CARPETA_DATOS.mkdir(exist_ok=True)
 
@@ -472,6 +541,26 @@ def crear_base_datos():
                 UNIQUE (
                     asignacion_id,
                     parcial
+                )
+            )
+            """
+        )
+
+        conexion.execute(
+            """
+            CREATE TABLE IF NOT EXISTS avisos (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                codigo TEXT NOT NULL UNIQUE,
+                titulo TEXT NOT NULL,
+                mensaje TEXT NOT NULL,
+                fecha_publicacion TEXT NOT NULL,
+                fecha_evento TEXT NOT NULL,
+                semestre INTEGER,
+                activo INTEGER NOT NULL DEFAULT 1
+                    CHECK (activo IN (0, 1)),
+                CHECK (
+                    semestre IS NULL
+                    OR semestre BETWEEN 1 AND 8
                 )
             )
             """
@@ -865,6 +954,31 @@ def crear_base_datos():
                     ),
                 )
 
+        conexion.executemany(
+            """
+            INSERT INTO avisos (
+                codigo,
+                titulo,
+                mensaje,
+                fecha_publicacion,
+                fecha_evento,
+                semestre,
+                activo
+            )
+            VALUES (?, ?, ?, ?, ?, ?, 1)
+            ON CONFLICT (codigo)
+            DO UPDATE SET
+                titulo = excluded.titulo,
+                mensaje = excluded.mensaje,
+                fecha_publicacion =
+                    excluded.fecha_publicacion,
+                fecha_evento = excluded.fecha_evento,
+                semestre = excluded.semestre,
+                activo = excluded.activo
+            """,
+            AVISOS_INICIALES,
+        )
+
         conexion.commit()
 
 
@@ -1203,6 +1317,51 @@ def contar_examenes():
 
     return resultado[0]
 
+def obtener_avisos_por_estudiante(matricula):
+    with closing(conectar()) as conexion:
+        conexion.row_factory = sqlite3.Row
+
+        avisos = conexion.execute(
+            """
+            SELECT
+                av.codigo,
+                av.titulo,
+                av.mensaje,
+                av.fecha_publicacion,
+                av.fecha_evento,
+                av.semestre
+            FROM avisos AS av
+            INNER JOIN estudiantes AS e
+                ON e.matricula = ?
+            WHERE av.activo = 1
+                AND (
+                    av.semestre IS NULL
+                    OR av.semestre = e.semestre
+                )
+            ORDER BY
+                av.fecha_evento,
+                av.codigo
+            """,
+            (matricula,),
+        ).fetchall()
+
+    return [
+        dict(aviso)
+        for aviso in avisos
+    ]
+
+
+def contar_avisos():
+    with closing(conectar()) as conexion:
+        resultado = conexion.execute(
+            """
+            SELECT COUNT(*)
+            FROM avisos
+            """
+        ).fetchone()
+
+    return resultado[0]
+
 if __name__ == "__main__":
     crear_base_datos()
 
@@ -1391,4 +1550,33 @@ if __name__ == "__main__":
         print(
             f"\nTotal de exámenes registrados: "
             f"{contar_examenes()}"
+        )
+
+        avisos = obtener_avisos_por_estudiante(
+            matricula_ingresada
+        )
+
+        print(
+            f"\nAvisos para "
+            f"{estudiante_encontrado['nombre']}: "
+            f"{len(avisos)}"
+        )
+
+        for aviso in avisos:
+            alcance = (
+                "General"
+                if aviso["semestre"] is None
+                else f"{aviso['semestre']}.º semestre"
+            )
+
+            print(
+                f"- {aviso['fecha_evento']} | "
+                f"{aviso['titulo']} | "
+                f"{alcance}"
+            )
+            print(f"  {aviso['mensaje']}")
+
+        print(
+            f"\nTotal de avisos registrados: "
+            f"{contar_avisos()}"
         )
