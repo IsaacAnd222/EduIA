@@ -5,6 +5,7 @@ from base_datos import (
     buscar_estudiante,
     crear_base_datos,
     obtener_asignaciones_por_semestre,
+    obtener_calificaciones_por_estudiante,
     obtener_horario_por_estudiante,
     obtener_materias_por_semestre,
 )
@@ -274,6 +275,46 @@ def construir_respuesta_profesores(semestre):
 
     return "\n".join(lineas)
 
+def construir_respuesta_calificaciones(matricula):
+    calificaciones = (
+        obtener_calificaciones_por_estudiante(
+            matricula
+        )
+    )
+
+    if not calificaciones:
+        return (
+            "No encontré calificaciones registradas "
+            "para este estudiante."
+        )
+
+    lineas = ["Estas son tus calificaciones:"]
+
+    for calificacion in calificaciones:
+        lineas.append(
+            f"- {calificacion['materia']}: "
+            f"P1 {calificacion['parcial_1']:.1f}, "
+            f"P2 {calificacion['parcial_2']:.1f}, "
+            f"P3 {calificacion['parcial_3']:.1f}, "
+            f"promedio "
+            f"{calificacion['promedio']:.2f}."
+        )
+
+    promedio_general = round(
+        sum(
+            calificacion["promedio"]
+            for calificacion in calificaciones
+        ) / len(calificaciones),
+        2,
+    )
+
+    lineas.append(
+        f"Tu promedio general es "
+        f"{promedio_general:.2f}."
+    )
+
+    return "\n".join(lineas)
+
 def ejecutar_eduia():
     crear_base_datos()
 
@@ -340,6 +381,13 @@ def ejecutar_eduia():
             elif categoria == "profesor":
                 respuesta = construir_respuesta_profesores(
                     estudiante_actual["semestre"]
+                )
+
+            elif categoria == "calificacion":
+                respuesta = (
+                    construir_respuesta_calificaciones(
+                        estudiante_actual["matricula"]
+                    )
                 )
 
             print(f"EduIA: {respuesta}")
