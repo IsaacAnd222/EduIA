@@ -362,6 +362,35 @@ def crear_base_datos():
             """
         )
 
+        conexion.execute(
+            """
+            CREATE TABLE IF NOT EXISTS inscripciones (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                estudiante_matricula TEXT NOT NULL,
+                asignacion_id INTEGER NOT NULL,
+                fecha_inscripcion TEXT NOT NULL,
+                estado TEXT NOT NULL DEFAULT 'activa'
+                    CHECK (
+                        estado IN (
+                            'activa',
+                            'baja',
+                            'finalizada'
+                        )
+                    ),
+                FOREIGN KEY (estudiante_matricula)
+                    REFERENCES estudiantes (matricula)
+                    ON DELETE CASCADE,
+                FOREIGN KEY (asignacion_id)
+                    REFERENCES asignaciones (id)
+                    ON DELETE CASCADE,
+                UNIQUE (
+                    estudiante_matricula,
+                    asignacion_id
+                )
+            )
+            """
+        )
+
         conexion.executemany(
             """
             INSERT OR IGNORE INTO estudiantes (
@@ -580,6 +609,25 @@ def crear_base_datos():
                 ),
             )
 
+        conexion.execute(
+            """
+            INSERT OR IGNORE INTO inscripciones (
+                estudiante_matricula,
+                asignacion_id,
+                fecha_inscripcion,
+                estado
+            )
+            SELECT
+                e.matricula,
+                a.id,
+                '2026-08-01',
+                'activa'
+            FROM estudiantes AS e
+            INNER JOIN asignaciones AS a
+                ON a.grupo = e.grupo
+            """
+        )
+
         conexion.commit()
 
 
@@ -754,6 +802,78 @@ def contar_horarios():
 
     return resultado[0]
 
+def obtener_inscripciones_por_estudiante(matricula):
+    with closing(conectar()) as conexion:
+        conexion.row_factory = sqlite3.Row
+
+        inscripciones = conexion.execute(
+            """
+            SELECT
+                i.id,
+                i.fecha_inscripcion,
+                i.estado,
+                m.nombre AS materia,
+                m.semestre,
+                m.orden,
+                p.nombre AS profesor,
+                a.grupo
+            FROM inscripciones AS i
+            INNER JOIN asignaciones AS a
+                ON a.id = i.asignacion_id
+            INNER JOIN materias AS m
+                ON m.id = a.materia_id
+            INNER JOIN profesores AS p
+                ON p.id = a.profesor_id
+            WHERE i.estudiante_matricula = ?
+            ORDER BY m.orden
+            """,
+            (matricula,),
+        ).fetchall()
+
+    return [
+        dict(inscripcion)
+        for inscripcion in inscripciones
+    ]
+
+def obtener_resumen_inscripciones():
+    with closing(conectar()) as conexion:
+        conexion.row_factory = sqlite3.Row
+
+        resumen = conexion.execute(
+            """
+            SELECT
+                e.matricula,
+                e.nombre,
+                e.grupo,
+                COUNT(i.id) AS total_inscripciones
+            FROM estudiantes AS e
+            LEFT JOIN inscripciones AS i
+                ON i.estudiante_matricula = e.matricula
+            GROUP BY
+                e.matricula,
+                e.nombre,
+                e.grupo
+            ORDER BY e.matricula
+            """
+        ).fetchall()
+
+    return [
+        dict(estudiante)
+        for estudiante in resumen
+    ]
+
+
+def contar_inscripciones():
+    with closing(conectar()) as conexion:
+        resultado = conexion.execute(
+            """
+            SELECT COUNT(*)
+            FROM inscripciones
+            """
+        ).fetchone()
+
+    return resultado[0]
+
 if __name__ == "__main__":
     crear_base_datos()
 
@@ -844,4 +964,38 @@ if __name__ == "__main__":
         print(
             f"\nTotal de horarios registrados: "
             f"{contar_horarios()}"
+        )
+
+        inscripciones = (
+            obtener_inscripciones_por_estudiante(
+                matricula_ingresada
+            )
+        )
+
+        print(
+            f"\nInscripciones de "
+            f"{estudiante_encontrado['nombre']}: "
+            f"{len(inscripciones)}"
+        )
+
+        for inscripcion in inscripciones:
+            print(
+                f"- {inscripcion['materia']} | "
+                f"{inscripcion['estado']} | "
+                f"{inscripcion['fecha_inscripcion']}"
+            )
+
+        print("\nResumen de inscripciones:")
+
+        for estudiante in obtener_resumen_inscripciones():
+            print(
+                f"{estudiante['matricula']} - "
+                f"{estudiante['nombre']} - "
+                f"{estudiante['grupo']}: "
+                f"{estudiante['total_inscripciones']}"
+            )
+
+        print(
+            f"\nTotal de inscripciones registradas: "
+            f"{contar_inscripciones()}"
         )
