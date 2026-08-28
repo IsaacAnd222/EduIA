@@ -269,6 +269,25 @@ BLOQUES_POR_SEMESTRE = {
     7: BLOQUES_VESPERTINOS,
 }
 
+CALIFICACIONES_ISAAC = [
+    (10.0, 10.0, 10.0),
+    (9.7, 10.0, 9.9),
+    (9.9, 10.0, 10.0),
+    (10.0, 10.0, 10.0),
+    (10.0, 9.9, 10.0),
+    (10.0, 10.0, 9.9),
+]
+
+CALIFICACIONES_GENERALES = [
+    (8.4, 8.9, 9.1),
+    (7.5, 8.2, 8.0),
+    (9.0, 9.2, 8.8),
+    (6.8, 7.5, 7.9),
+    (9.5, 9.1, 9.3),
+    (8.0, 7.8, 8.5),
+    (7.2, 6.9, 7.6),
+]
+
 def conectar():
     CARPETA_DATOS.mkdir(exist_ok=True)
 
@@ -387,6 +406,34 @@ def crear_base_datos():
                     estudiante_matricula,
                     asignacion_id
                 )
+            )
+            """
+        )
+
+        conexion.execute(
+            """
+            CREATE TABLE IF NOT EXISTS calificaciones (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                inscripcion_id INTEGER NOT NULL UNIQUE,
+                parcial_1 REAL NOT NULL
+                    CHECK (
+                        parcial_1 BETWEEN 0 AND 10
+                    ),
+                parcial_2 REAL NOT NULL
+                    CHECK (
+                        parcial_2 BETWEEN 0 AND 10
+                    ),
+                parcial_3 REAL NOT NULL
+                    CHECK (
+                        parcial_3 BETWEEN 0 AND 10
+                    ),
+                promedio REAL NOT NULL
+                    CHECK (
+                        promedio BETWEEN 0 AND 10
+                    ),
+                FOREIGN KEY (inscripcion_id)
+                    REFERENCES inscripciones (id)
+                    ON DELETE CASCADE
             )
             """
         )
@@ -627,6 +674,93 @@ def crear_base_datos():
                 ON a.grupo = e.grupo
             """
         )
+
+        inscripciones = conexion.execute(
+            """
+            SELECT
+                i.id,
+                i.estudiante_matricula,
+                m.orden
+            FROM inscripciones AS i
+            INNER JOIN asignaciones AS a
+                ON a.id = i.asignacion_id
+            INNER JOIN materias AS m
+                ON m.id = a.materia_id
+            ORDER BY
+                i.estudiante_matricula,
+                m.orden
+            """
+        ).fetchall()
+
+        for inscripcion in inscripciones:
+            inscripcion_id = inscripcion[0]
+            matricula = inscripcion[1]
+            orden = inscripcion[2]
+
+            if matricula == "2026001":
+                indice = (
+                    orden - 1
+                ) % len(CALIFICACIONES_ISAAC)
+
+                parciales = CALIFICACIONES_ISAAC[indice]
+            else:
+                ultimo_digito = int(matricula[-1])
+
+                indice = (
+                    ultimo_digito + orden - 2
+                ) % len(CALIFICACIONES_GENERALES)
+
+                parciales = CALIFICACIONES_GENERALES[
+                    indice
+                ]
+
+            parcial_1 = parciales[0]
+            parcial_2 = parciales[1]
+            parcial_3 = parciales[2]
+
+            promedio = round(
+                (
+                    parcial_1
+                    + parcial_2
+                    + parcial_3
+                ) / 3,
+                2,
+            )
+
+            if (
+                matricula == "2026001"
+                and promedio <= 9.6
+            ):
+                raise ValueError(
+                    "Isaac debe tener promedios "
+                    "mayores a 9.6."
+                )
+
+            conexion.execute(
+                """
+                INSERT INTO calificaciones (
+                    inscripcion_id,
+                    parcial_1,
+                    parcial_2,
+                    parcial_3,
+                    promedio
+                )
+                VALUES (?, ?, ?, ?, ?)
+                ON CONFLICT (inscripcion_id)
+                DO UPDATE SET
+                    parcial_1 = excluded.parcial_1,
+                    parcial_2 = excluded.parcial_2,
+                    parcial_3 = excluded.parcial_3,
+                    promedio = excluded.promedio
+                """,
+                (
+                    inscripcion_id,
+                    parcial_1,
+                    parcial_2,
+                    parcial_3,
+                    promedio,
+                ),
+            )
 
         conexion.commit()
 
@@ -874,6 +1008,49 @@ def contar_inscripciones():
 
     return resultado[0]
 
+def obtener_calificaciones_por_estudiante(matricula):
+    with closing(conectar()) as conexion:
+        conexion.row_factory = sqlite3.Row
+
+        calificaciones = conexion.execute(
+            """
+            SELECT
+                m.nombre AS materia,
+                m.orden,
+                c.parcial_1,
+                c.parcial_2,
+                c.parcial_3,
+                c.promedio
+            FROM calificaciones AS c
+            INNER JOIN inscripciones AS i
+                ON i.id = c.inscripcion_id
+            INNER JOIN asignaciones AS a
+                ON a.id = i.asignacion_id
+            INNER JOIN materias AS m
+                ON m.id = a.materia_id
+            WHERE i.estudiante_matricula = ?
+            ORDER BY m.orden
+            """,
+            (matricula,),
+        ).fetchall()
+
+    return [
+        dict(calificacion)
+        for calificacion in calificaciones
+    ]
+
+
+def contar_calificaciones():
+    with closing(conectar()) as conexion:
+        resultado = conexion.execute(
+            """
+            SELECT COUNT(*)
+            FROM calificaciones
+            """
+        ).fetchone()
+
+    return resultado[0]
+
 if __name__ == "__main__":
     crear_base_datos()
 
@@ -998,4 +1175,44 @@ if __name__ == "__main__":
         print(
             f"\nTotal de inscripciones registradas: "
             f"{contar_inscripciones()}"
+        )
+
+        calificaciones = (
+            obtener_calificaciones_por_estudiante(
+                matricula_ingresada
+            )
+        )
+
+        print(
+            f"\nCalificaciones de "
+            f"{estudiante_encontrado['nombre']}:"
+        )
+
+        for calificacion in calificaciones:
+            print(
+                f"- {calificacion['materia']} | "
+                f"P1: {calificacion['parcial_1']:.1f} | "
+                f"P2: {calificacion['parcial_2']:.1f} | "
+                f"P3: {calificacion['parcial_3']:.1f} | "
+                f"Promedio: "
+                f"{calificacion['promedio']:.2f}"
+            )
+
+        if calificaciones:
+            promedio_general = round(
+                sum(
+                    calificacion["promedio"]
+                    for calificacion in calificaciones
+                ) / len(calificaciones),
+                2,
+            )
+
+            print(
+                f"Promedio general: "
+                f"{promedio_general:.2f}"
+            )
+
+        print(
+            f"\nTotal de calificaciones registradas: "
+            f"{contar_calificaciones()}"
         )
