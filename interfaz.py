@@ -22,7 +22,7 @@ class AplicacionEduIA(ctk.CTk):
 
         self.title("EduIA - Asistente Virtual Universitario")
         self.geometry("1000x650")
-        self.minsize(850, 550)
+        self.minsize(850, 650)
         self.configure(fg_color=COLOR_FONDO)
 
         self.grid_rowconfigure(0, weight=1)
@@ -275,14 +275,65 @@ class AplicacionEduIA(ctk.CTk):
             pady=(0, 12),
         )
 
-        espacio = ctk.CTkFrame(
+        ctk.CTkLabel(
             barra_lateral,
-            fg_color="transparent",
+            text="Consultas rápidas",
+            text_color=COLOR_VERDE_OSCURO,
+            font=ctk.CTkFont(
+                size=14,
+                weight="bold",
+            ),
+        ).pack(
+            padx=25,
+            pady=(8, 10),
         )
-        espacio.pack(
-            fill="both",
-            expand=True,
-        )
+
+        consultas_rapidas = [
+            (
+                "Mi horario",
+                "¿Cuál es mi horario?",
+            ),
+            (
+                "Mis materias",
+                "¿Cuáles son mis materias?",
+            ),
+            (
+                "Mis profesores",
+                "¿Quiénes son mis profesores?",
+            ),
+            (
+                "Mis calificaciones",
+                "¿Cuáles son mis calificaciones?",
+            ),
+            (
+                "Mis exámenes",
+                "¿Qué exámenes tengo?",
+            ),
+            (
+                "Avisos escolares",
+                "¿Hay avisos escolares?",
+            ),
+        ]
+
+        for texto_boton, consulta in consultas_rapidas:
+            ctk.CTkButton(
+                barra_lateral,
+                text=texto_boton,
+                width=210,
+                height=34,
+                corner_radius=10,
+                fg_color="#CBE8D4",
+                hover_color=COLOR_VERDE_PRINCIPAL,
+                text_color=COLOR_VERDE_OSCURO,
+                command=lambda pregunta=consulta: (
+                    self.enviar_consulta_rapida(
+                        pregunta
+                    )
+                ),
+            ).pack(
+                padx=25,
+                pady=4,
+            )
 
         ctk.CTkButton(
             barra_lateral,
@@ -297,8 +348,9 @@ class AplicacionEduIA(ctk.CTk):
             text_color=COLOR_VERDE_OSCURO,
             command=self.cerrar_sesion,
         ).pack(
+            side="bottom",
             padx=25,
-            pady=(0, 30),
+            pady=(15, 30),
         )
 
         area_chat = ctk.CTkFrame(
@@ -517,6 +569,15 @@ class AplicacionEduIA(ctk.CTk):
 
         self.after_cancel(self.animacion_id)
         self.animacion_id = None
+
+    def enviar_consulta_rapida(self, consulta):
+        if self.entrada_consulta is None:
+            return
+
+        self.entrada_consulta.delete(0, "end")
+        self.entrada_consulta.insert(0, consulta)
+
+        self.enviar_consulta()
 
     def enviar_consulta(self, evento=None):
         consulta = (
