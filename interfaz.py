@@ -1,4 +1,7 @@
+from datetime import datetime
+
 import customtkinter as ctk
+
 
 from eduia import procesar_consulta
 from base_datos import (
@@ -559,6 +562,50 @@ class AplicacionEduIA(ctk.CTk):
                 mensaje,
             )
 
+    def agregar_metadatos_respuesta(
+        self,
+        tipo,
+        categoria,
+        confianza,
+        fecha_hora=None,
+    ):
+        partes = [
+            f"Tipo: {tipo}",
+            f"Categoría: {categoria}",
+            f"Confianza: {confianza:.0%}",
+        ]
+
+        if fecha_hora is not None:
+            partes.insert(
+                0,
+                f"Fecha: {fecha_hora}",
+            )
+
+        texto_metadatos = "  ·  ".join(partes)
+
+        fila = ctk.CTkFrame(
+            self.contenedor_mensajes,
+            fg_color="transparent",
+        )
+        fila.pack(
+            fill="x",
+            padx=20,
+            pady=(0, 5),
+        )
+
+        ctk.CTkLabel(
+            fila,
+            text=texto_metadatos,
+            wraplength=650,
+            justify="left",
+            anchor="w",
+            text_color=COLOR_TEXTO_SECUNDARIO,
+            font=ctk.CTkFont(size=11),
+        ).pack(
+            side="left",
+            padx=10,
+        )
+
     def desplazar_al_final(self):
         if self.contenedor_mensajes is None:
             return
@@ -648,23 +695,22 @@ class AplicacionEduIA(ctk.CTk):
             tipo,
             categoria,
             confianza,
-             historial_id,
+            historial_id,
         ) = procesar_consulta(
             consulta,
             self.estudiante_actual,
         )
 
-        respuesta_completa = (
-            f"{respuesta}\n\n"
-            f"Tipo: {tipo}\n"
-            f"Categoría: {categoria}\n"
-            f"Confianza: {confianza:.0%}"
-        )
-
         self.agregar_mensaje(
             "EduIA",
-            respuesta_completa,
+            respuesta,
             animar=True,
+        )
+
+        self.agregar_metadatos_respuesta(
+            tipo,
+            categoria,
+            confianza,
         )
 
         self.agregar_opciones_retroalimentacion(
@@ -820,23 +866,22 @@ class AplicacionEduIA(ctk.CTk):
                 registro["consulta"],
             )
 
-            fecha_hora = registro[
-                "fecha_hora"
-            ].replace("T", " ")
-
-            respuesta_historial = (
-                f"{registro['respuesta']}\n\n"
-                f"Fecha: {fecha_hora}\n"
-                f"Tipo: {registro['tipo']}\n"
-                f"Categoría: "
-                f"{registro['categoria']}\n"
-                f"Confianza: "
-                f"{registro['confianza']:.0%}"
+            fecha_hora = datetime.fromisoformat(
+                registro["fecha_hora"]
+            ).strftime(
+                "%d/%m/%Y %H:%M:%S"
             )
 
             self.agregar_mensaje(
                 "EduIA",
-                respuesta_historial,
+                registro["respuesta"],
+            )
+
+            self.agregar_metadatos_respuesta(
+                registro["tipo"],
+                registro["categoria"],
+                registro["confianza"],
+                fecha_hora,
             )
 
         self.after(
