@@ -1,5 +1,6 @@
 from datetime import datetime
-
+from pathlib import Path
+from PIL import Image
 import customtkinter as ctk
 
 
@@ -9,6 +10,10 @@ from base_datos import (
     guardar_retroalimentacion,
     obtener_historial_por_estudiante,
 )
+
+RUTA_PROYECTO = Path(__file__).resolve().parent
+RUTA_LOGO = RUTA_PROYECTO / "assets" / "logo_eduia.png"
+RUTA_ICONO = RUTA_PROYECTO / "assets" / "icono_eduia.ico"
 
 COLOR_FONDO = "#F4FAF6"
 COLOR_TARJETA = "#FFFFFF"
@@ -31,6 +36,26 @@ class AplicacionEduIA(ctk.CTk):
         self.geometry("1000x650")
         self.minsize(850, 650)
         self.configure(fg_color=COLOR_FONDO)
+
+        self.after(
+            200,
+            lambda: self.iconbitmap(
+                str(RUTA_ICONO)
+            ),
+        )
+
+        with Image.open(RUTA_LOGO) as imagen:
+            imagen_logo = imagen.copy()
+
+        self.logo_acceso = ctk.CTkImage(
+            light_image=imagen_logo,
+            size=(170, 170),
+        )
+
+        self.logo_chat = ctk.CTkImage(
+            light_image=imagen_logo,
+            size=(105, 105),
+        )
 
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
@@ -78,18 +103,14 @@ class AplicacionEduIA(ctk.CTk):
             pady=30,
         )
 
-        titulo = ctk.CTkLabel(
+        logo_acceso = ctk.CTkLabel(
             tarjeta,
-            text="EduIA",
-            text_color=COLOR_VERDE_OSCURO,
-            font=ctk.CTkFont(
-                size=36,
-                weight="bold",
-            ),
+            text="",
+            image=self.logo_acceso,
         )
-        titulo.pack(
+        logo_acceso.pack(
             padx=45,
-            pady=(45, 5),
+            pady=(25, 5),
         )
 
         subtitulo = ctk.CTkLabel(
@@ -227,15 +248,11 @@ class AplicacionEduIA(ctk.CTk):
 
         ctk.CTkLabel(
             barra_lateral,
-            text="EduIA",
-            text_color=COLOR_VERDE_OSCURO,
-            font=ctk.CTkFont(
-                size=30,
-                weight="bold",
-            ),
+            text="",
+            image=self.logo_chat,
         ).pack(
             padx=25,
-            pady=(35, 30),
+            pady=(15, 15),
         )
 
         ctk.CTkLabel(

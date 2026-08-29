@@ -1671,6 +1671,11 @@ def guardar_consulta_historial(
     categoria,
     confianza,
 ):
+    confianza = max(
+        0.0,
+        min(1.0, float(confianza)),
+    )
+
     fecha_hora = datetime.now().isoformat(
         timespec="seconds"
     )
@@ -1702,7 +1707,7 @@ def guardar_consulta_historial(
 
         conexion.commit()
 
-    return cursor.lastrowid
+        return cursor.lastrowid
 
 def obtener_historial_por_estudiante(
     matricula,
