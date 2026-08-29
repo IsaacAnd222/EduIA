@@ -568,7 +568,10 @@ class AplicacionEduIA(ctk.CTk):
         categoria,
         confianza,
         fecha_hora=None,
+        fue_util=None,
+        mostrar_valoracion=False,
     ):
+        
         partes = [
             f"Tipo: {tipo}",
             f"Categoría: {categoria}",
@@ -579,6 +582,18 @@ class AplicacionEduIA(ctk.CTk):
             partes.insert(
                 0,
                 f"Fecha: {fecha_hora}",
+            )
+
+        if mostrar_valoracion:
+            if fue_util is None:
+                valoracion = "Sin evaluar"
+            elif fue_util == 1:
+                valoracion = "Útil"
+            else:
+                valoracion = "No útil"
+
+            partes.append(
+                f"Valoración: {valoracion}"
             )
 
         texto_metadatos = "  ·  ".join(partes)
@@ -881,7 +896,9 @@ class AplicacionEduIA(ctk.CTk):
                 registro["tipo"],
                 registro["categoria"],
                 registro["confianza"],
-                fecha_hora,
+                fecha_hora=fecha_hora,
+                fue_util=registro["fue_util"],
+                mostrar_valoracion=True,
             )
 
         self.after(

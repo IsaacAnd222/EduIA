@@ -1714,18 +1714,21 @@ def obtener_historial_por_estudiante(
         historial = conexion.execute(
             """
             SELECT
-                id,
-                consulta,
-                respuesta,
-                tipo,
-                categoria,
-                confianza,
-                fecha_hora
-            FROM historial_consultas
-            WHERE estudiante_matricula = ?
+                h.id,
+                h.consulta,
+                h.respuesta,
+                h.tipo,
+                h.categoria,
+                h.confianza,
+                h.fecha_hora,
+                r.fue_util
+            FROM historial_consultas AS h
+            LEFT JOIN retroalimentaciones AS r
+                ON r.historial_id = h.id
+            WHERE h.estudiante_matricula = ?
             ORDER BY
-                fecha_hora DESC,
-                id DESC
+                h.fecha_hora DESC,
+                h.id DESC
             LIMIT ?
             """,
             (
