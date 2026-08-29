@@ -10,6 +10,7 @@ from base_datos import (
     obtener_examenes_por_estudiante,
     obtener_horario_por_estudiante,
     obtener_materias_por_semestre,
+    guardar_consulta_historial,
 )
 from academico import responder_consulta_academica
 
@@ -404,5 +405,14 @@ def procesar_consulta(pregunta, estudiante):
             f"\nConfianza del tema académico: "
             f"{confianza_tema:.0%}"
         )
+
+    guardar_consulta_historial(
+        estudiante["matricula"],
+        pregunta,
+        respuesta,
+        tipo,
+        categoria,
+        confianza,
+    )
 
     return respuesta, tipo, categoria, confianza

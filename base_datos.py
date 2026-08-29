@@ -1,7 +1,7 @@
 import sqlite3
 
 from contextlib import closing
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 
@@ -762,6 +762,27 @@ def crear_base_datos():
                         semestre_recomendado
                         BETWEEN 1 AND 8
                     )
+            )
+            """
+        )
+
+        conexion.execute(
+            """
+            CREATE TABLE IF NOT EXISTS historial_consultas (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                estudiante_matricula TEXT NOT NULL,
+                consulta TEXT NOT NULL,
+                respuesta TEXT NOT NULL,
+                tipo TEXT NOT NULL,
+                categoria TEXT NOT NULL,
+                confianza REAL NOT NULL
+                    CHECK (
+                        confianza BETWEEN 0 AND 1
+                    ),
+                fecha_hora TEXT NOT NULL,
+                FOREIGN KEY (estudiante_matricula)
+                    REFERENCES estudiantes (matricula)
+                    ON DELETE CASCADE
             )
             """
         )
@@ -1626,3 +1647,77 @@ def contar_contenidos_academicos():
         ).fetchone()
 
     return resultado[0]
+
+def guardar_consulta_historial(
+    matricula,
+    consulta,
+    respuesta,
+    tipo,
+    categoria,
+    confianza,
+):
+    fecha_hora = datetime.now().isoformat(
+        timespec="seconds"
+    )
+
+    with closing(conectar()) as conexion:
+        conexion.execute(
+            """
+            INSERT INTO historial_consultas (
+                estudiante_matricula,
+                consulta,
+                respuesta,
+                tipo,
+                categoria,
+                confianza,
+                fecha_hora
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                matricula,
+                consulta,
+                respuesta,
+                tipo,
+                categoria,
+                confianza,
+                fecha_hora,
+            ),
+        )
+
+        conexion.commit()
+
+def obtener_historial_por_estudiante(
+    matricula,
+    limite=50,
+):
+    with closing(conectar()) as conexion:
+        conexion.row_factory = sqlite3.Row
+
+        historial = conexion.execute(
+            """
+            SELECT
+                id,
+                consulta,
+                respuesta,
+                tipo,
+                categoria,
+                confianza,
+                fecha_hora
+            FROM historial_consultas
+            WHERE estudiante_matricula = ?
+            ORDER BY
+                fecha_hora DESC,
+                id DESC
+            LIMIT ?
+            """,
+            (
+                matricula,
+                limite,
+            ),
+        ).fetchall()
+
+    return [
+        dict(consulta)
+        for consulta in historial
+    ]

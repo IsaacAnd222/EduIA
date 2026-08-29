@@ -1,7 +1,10 @@
 import customtkinter as ctk
 
 from eduia import procesar_consulta
-from base_datos import buscar_estudiante
+from base_datos import (
+    buscar_estudiante,
+    obtener_historial_por_estudiante,
+)
 
 COLOR_FONDO = "#F4FAF6"
 COLOR_TARJETA = "#FFFFFF"
@@ -366,8 +369,21 @@ class AplicacionEduIA(ctk.CTk):
         area_chat.grid_rowconfigure(1, weight=1)
         area_chat.grid_columnconfigure(0, weight=1)
 
-        ctk.CTkLabel(
+        cabecera = ctk.CTkFrame(
             area_chat,
+            fg_color="transparent",
+        )
+        cabecera.grid(
+            row=0,
+            column=0,
+            sticky="ew",
+            padx=30,
+            pady=(18, 14),
+        )
+        cabecera.grid_columnconfigure(0, weight=1)
+
+        ctk.CTkLabel(
+            cabecera,
             text="Asistente académico",
             text_color=COLOR_VERDE_OSCURO,
             font=ctk.CTkFont(
@@ -378,8 +394,24 @@ class AplicacionEduIA(ctk.CTk):
             row=0,
             column=0,
             sticky="w",
-            padx=30,
-            pady=(22, 16),
+        )
+
+        ctk.CTkButton(
+            cabecera,
+            text="Historial",
+            width=110,
+            height=36,
+            corner_radius=12,
+            fg_color="transparent",
+            hover_color=COLOR_VERDE_CLARO,
+            border_width=1,
+            border_color=COLOR_VERDE_PRINCIPAL,
+            text_color=COLOR_VERDE_OSCURO,
+            command=self.mostrar_historial,
+        ).grid(
+            row=0,
+            column=1,
+            sticky="e",
         )
 
         self.contenedor_mensajes = (
@@ -631,6 +663,73 @@ class AplicacionEduIA(ctk.CTk):
             "EduIA",
             respuesta_completa,
             animar=True,
+        )
+
+    def mostrar_historial(self):
+        self.cancelar_animacion()
+
+        if (
+            self.contenedor_mensajes is None
+            or self.estudiante_actual is None
+        ):
+            return
+
+        for mensaje in (
+            self.contenedor_mensajes.winfo_children()
+        ):
+            mensaje.destroy()
+
+        historial = obtener_historial_por_estudiante(
+            self.estudiante_actual["matricula"],
+            limite=10,
+        )
+
+        if not historial:
+            self.agregar_mensaje(
+                "EduIA",
+                (
+                    "Todavía no tienes consultas "
+                    "guardadas en el historial."
+                ),
+            )
+            return
+
+        self.agregar_mensaje(
+            "EduIA",
+            (
+                f"Estas son tus últimas "
+                f"{len(historial)} consultas."
+            ),
+        )
+
+        for registro in reversed(historial):
+            self.agregar_mensaje(
+                "Tú",
+                registro["consulta"],
+            )
+
+            fecha_hora = registro[
+                "fecha_hora"
+            ].replace("T", " ")
+
+            respuesta_historial = (
+                f"{registro['respuesta']}\n\n"
+                f"Fecha: {fecha_hora}\n"
+                f"Tipo: {registro['tipo']}\n"
+                f"Categoría: "
+                f"{registro['categoria']}\n"
+                f"Confianza: "
+                f"{registro['confianza']:.0%}"
+            )
+
+            self.agregar_mensaje(
+                "EduIA",
+                respuesta_historial,
+            )
+
+        self.after(
+            50,
+            self.desplazar_al_final,
         )
 
     def nuevo_chat(self):
