@@ -209,32 +209,3 @@ def responder_consulta_academica(
     respuesta = "\n".join(lineas)
 
     return respuesta, confianza, contenido["tema"]
-
-
-if __name__ == "__main__":
-    crear_base_datos()
-
-    print("PRUEBA DEL MÓDULO ACADÉMICO")
-    print("Escribe 'salir' para terminar.")
-
-    while True:
-        pregunta = input(
-            "\nEscribe una consulta académica: "
-        ).strip()
-
-        if pregunta.casefold() == "salir":
-            print("Hasta luego.")
-            break
-
-        respuesta, confianza, tema = (
-            responder_consulta_academica(pregunta)
-        )
-
-        print(f"\nEduIA: {respuesta}")
-        print(
-            f"Confianza del tema: "
-            f"{confianza:.0%}"
-        )
-
-        if tema is not None:
-            print(f"Tema identificado: {tema}")
