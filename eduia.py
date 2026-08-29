@@ -406,7 +406,7 @@ def procesar_consulta(pregunta, estudiante):
             f"{confianza_tema:.0%}"
         )
 
-    guardar_consulta_historial(
+    historial_id = guardar_consulta_historial(
         estudiante["matricula"],
         pregunta,
         respuesta,
@@ -415,4 +415,10 @@ def procesar_consulta(pregunta, estudiante):
         confianza,
     )
 
-    return respuesta, tipo, categoria, confianza
+    return (
+        respuesta,
+        tipo,
+        categoria,
+        confianza,
+        historial_id,
+    )

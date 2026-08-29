@@ -3,6 +3,7 @@ import customtkinter as ctk
 from eduia import procesar_consulta
 from base_datos import (
     buscar_estudiante,
+    guardar_retroalimentacion,
     obtener_historial_por_estudiante,
 )
 
@@ -647,6 +648,7 @@ class AplicacionEduIA(ctk.CTk):
             tipo,
             categoria,
             confianza,
+             historial_id,
         ) = procesar_consulta(
             consulta,
             self.estudiante_actual,
@@ -663,6 +665,116 @@ class AplicacionEduIA(ctk.CTk):
             "EduIA",
             respuesta_completa,
             animar=True,
+        )
+
+        self.agregar_opciones_retroalimentacion(
+            historial_id
+        )
+
+    def agregar_opciones_retroalimentacion(
+        self,
+        historial_id,
+    ):
+        fila = ctk.CTkFrame(
+            self.contenedor_mensajes,
+            fg_color="transparent",
+        )
+        fila.pack(
+            fill="x",
+            padx=20,
+            pady=(0, 12),
+        )
+
+        panel = ctk.CTkFrame(
+            fila,
+            corner_radius=12,
+            fg_color=COLOR_FONDO,
+        )
+        panel.pack(side="left")
+
+        etiqueta_estado = ctk.CTkLabel(
+            panel,
+            text="¿Esta respuesta fue útil?",
+            text_color=COLOR_TEXTO_SECUNDARIO,
+            font=ctk.CTkFont(size=12),
+        )
+        etiqueta_estado.pack(
+            side="left",
+            padx=(12, 8),
+            pady=8,
+        )
+
+        ctk.CTkButton(
+            panel,
+            text="Sí",
+            width=48,
+            height=28,
+            corner_radius=9,
+            fg_color="#F4D6C7",
+            hover_color="#DFAF9B",
+            text_color=COLOR_TEXTO,
+            command=lambda: (
+                self.registrar_retroalimentacion(
+                    historial_id,
+                    True,
+                    etiqueta_estado,
+                )
+            ),
+        ).pack(
+            side="left",
+            padx=4,
+            pady=8,
+        )
+
+        ctk.CTkButton(
+            panel,
+            text="No",
+            width=48,
+            height=28,
+            corner_radius=9,
+            fg_color="#F4D6C7",
+            hover_color="#DFAF9B",
+            text_color=COLOR_TEXTO,
+            command=lambda: (
+                self.registrar_retroalimentacion(
+                    historial_id,
+                    False,
+                    etiqueta_estado,
+                )
+            ),
+        ).pack(
+            side="left",
+            padx=(4, 12),
+            pady=8,
+        )
+
+        self.after(
+            10,
+            self.desplazar_al_final,
+        )
+
+    def registrar_retroalimentacion(
+        self,
+        historial_id,
+        fue_util,
+        etiqueta_estado,
+    ):
+        guardar_retroalimentacion(
+            historial_id,
+            fue_util,
+        )
+
+        seleccion = (
+            "Sí"
+            if fue_util
+            else "No"
+        )
+
+        etiqueta_estado.configure(
+            text=(
+                "Gracias por tu opinión. "
+                f"Seleccionaste: {seleccion}"
+            )
         )
 
     def mostrar_historial(self):

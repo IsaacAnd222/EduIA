@@ -787,6 +787,21 @@ def crear_base_datos():
             """
         )
 
+        conexion.execute(
+            """
+            CREATE TABLE IF NOT EXISTS retroalimentaciones (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                historial_id INTEGER NOT NULL UNIQUE,
+                fue_util INTEGER NOT NULL
+                    CHECK (fue_util IN (0, 1)),
+                fecha_hora TEXT NOT NULL,
+                FOREIGN KEY (historial_id)
+                    REFERENCES historial_consultas (id)
+                    ON DELETE CASCADE
+            )
+            """
+        )
+
         conexion.executemany(
             """
             INSERT OR IGNORE INTO estudiantes (
@@ -1661,7 +1676,7 @@ def guardar_consulta_historial(
     )
 
     with closing(conectar()) as conexion:
-        conexion.execute(
+        cursor = conexion.execute(
             """
             INSERT INTO historial_consultas (
                 estudiante_matricula,
@@ -1686,6 +1701,8 @@ def guardar_consulta_historial(
         )
 
         conexion.commit()
+
+    return cursor.lastrowid
 
 def obtener_historial_por_estudiante(
     matricula,
@@ -1721,3 +1738,36 @@ def obtener_historial_por_estudiante(
         dict(consulta)
         for consulta in historial
     ]
+
+def guardar_retroalimentacion(
+    historial_id,
+    fue_util,
+):
+    valor_utilidad = 1 if fue_util else 0
+
+    fecha_hora = datetime.now().isoformat(
+        timespec="seconds"
+    )
+
+    with closing(conectar()) as conexion:
+        conexion.execute(
+            """
+            INSERT INTO retroalimentaciones (
+                historial_id,
+                fue_util,
+                fecha_hora
+            )
+            VALUES (?, ?, ?)
+            ON CONFLICT (historial_id)
+            DO UPDATE SET
+                fue_util = excluded.fue_util,
+                fecha_hora = excluded.fecha_hora
+            """,
+            (
+                historial_id,
+                valor_utilidad,
+                fecha_hora,
+            ),
+        )
+
+        conexion.commit()
