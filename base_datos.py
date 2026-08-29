@@ -847,7 +847,7 @@ def crear_base_datos():
             materia_id = materia[0]
             semestre = materia[1]
             profesor_id = profesor[0]
-            grupo = f"{semestre}A"
+            grupo = f"{semestre}° ISD"
 
             conexion.execute(
                 """
