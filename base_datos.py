@@ -1289,6 +1289,29 @@ def obtener_materias_por_semestre(semestre):
 
     return [dict(materia) for materia in materias]
 
+def obtener_todas_las_materias():
+    with closing(conectar()) as conexion:
+        conexion.row_factory = sqlite3.Row
+
+        materias = conexion.execute(
+            """
+            SELECT
+                id,
+                nombre,
+                semestre,
+                orden
+            FROM materias
+            ORDER BY
+                semestre,
+                orden
+            """
+        ).fetchall()
+
+    return [
+        dict(materia)
+        for materia in materias
+    ]
+
 
 def contar_materias():
     with closing(conectar()) as conexion:

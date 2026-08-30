@@ -1,5 +1,5 @@
 from datetime import date
-
+import unicodedata
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
@@ -10,6 +10,7 @@ from base_datos import (
     obtener_examenes_por_estudiante,
     obtener_horario_por_estudiante,
     obtener_materias_por_semestre,
+    obtener_todas_las_materias,
     guardar_consulta_historial,
 )
 from academico import responder_consulta_academica
@@ -35,6 +36,9 @@ datos_entrenamiento = [
     ("qué materias curso", "materia"),
     ("lista de materias", "materia"),
     ("muéstrame mis materias", "materia"),
+    ("en qué salón tengo sistemas embebidos", "horario"),
+    ("qué día tengo inteligencia artificial", "horario"),
+    ("a qué hora tengo redes de computadoras ii", "horario"),
 
     # Exámenes
     ("cuándo tengo examen", "examen"),
@@ -42,6 +46,9 @@ datos_entrenamiento = [
     ("qué exámenes tengo", "examen"),
     ("fecha de mis exámenes", "examen"),
     ("cuándo presento mi parcial", "examen"),
+    ("cuándo es mi examen de inteligencia artificial", "examen"),
+    ("en qué salón es mi examen de sistemas embebidos", "examen"),
+    ("a qué hora es el examen de redes de computadoras ii", "examen"),
 
     # Profesores
     ("quiénes son mis profesores", "profesor"),
@@ -51,12 +58,18 @@ datos_entrenamiento = [
     ("quién es mi profesor", "profesor"),
     ("quién es mi docente", "profesor"),
     ("quién imparte mis materias", "profesor"),
+    ("quién imparte inteligencia artificial", "profesor"),
+    ("quién da sistemas embebidos", "profesor"),
+    ("quién es el profesor de redes de computadoras ii", "profesor"),
 
     # Calificaciones
     ("cuáles son mis calificaciones", "calificacion"),
     ("quiero ver mis calificaciones", "calificacion"),
     ("quiero consultar mis notas", "calificacion"),
     ("qué resultados obtuve", "calificacion"),
+    ("qué calificación tengo en inteligencia artificial", "calificacion"),
+    ("cuál es mi promedio de sistemas embebidos", "calificacion"),
+    ("cuánto saqué en redes de computadoras ii", "calificacion"),
 
     # Avisos escolares
     ("hay avisos escolares", "aviso"),
@@ -181,8 +194,49 @@ def buscar_respuesta(pregunta_usuario):
 
     return respuesta, tipo, categoria, confianza
 
-def construir_respuesta_horario(matricula):
-    horario = obtener_horario_por_estudiante(matricula)
+def normalizar_texto(texto):
+    texto_normalizado = unicodedata.normalize(
+        "NFD",
+        texto.lower(),
+    )
+
+    return "".join(
+        caracter
+        for caracter in texto_normalizado
+        if unicodedata.category(caracter) != "Mn"
+    )
+
+
+def identificar_materia(pregunta):
+    materias = obtener_todas_las_materias()
+
+    pregunta_normalizada = normalizar_texto(
+        pregunta
+    )
+
+    materias_ordenadas = sorted(
+        materias,
+        key=lambda materia: len(materia["nombre"]),
+        reverse=True,
+    )
+
+    for materia in materias_ordenadas:
+        nombre_normalizado = normalizar_texto(
+            materia["nombre"]
+        )
+
+        if nombre_normalizado in pregunta_normalizada:
+            return materia
+
+    return None
+
+def construir_respuesta_horario(
+    matricula,
+    materia_buscada=None,
+):
+    horario = obtener_horario_por_estudiante(
+        matricula
+    )
 
     if not horario:
         return (
@@ -190,7 +244,24 @@ def construir_respuesta_horario(matricula):
             "para este estudiante."
         )
 
-    lineas = ["Este es tu horario:"]
+    if materia_buscada is not None:
+        horario = [
+            clase
+            for clase in horario
+            if clase["materia"] == materia_buscada
+        ]
+
+        if not horario:
+            return (
+                f"No encontré un horario registrado "
+                f"para {materia_buscada}."
+            )
+
+        lineas = [
+            f"Tu horario de {materia_buscada} es:"
+        ]
+    else:
+        lineas = ["Este es tu horario:"]
 
     for clase in horario:
         lineas.append(
@@ -224,7 +295,10 @@ def construir_respuesta_materias(semestre):
 
     return "\n".join(lineas)
 
-def construir_respuesta_profesores(semestre):
+def construir_respuesta_profesores(
+    semestre,
+    materia_buscada=None,
+):
     asignaciones = obtener_asignaciones_por_semestre(
         semestre
     )
@@ -233,6 +307,22 @@ def construir_respuesta_profesores(semestre):
         return (
             "No encontré profesores asignados "
             "para tu semestre."
+        )
+
+    if materia_buscada is not None:
+        for asignacion in asignaciones:
+            if asignacion["materia"] == materia_buscada:
+                return (
+                    f"La materia {asignacion['materia']} "
+                    f"es impartida por "
+                    f"{asignacion['profesor']} "
+                    f"({asignacion['especialidad']}). "
+                    f"Correo: {asignacion['correo']}."
+                )
+
+        return (
+            f"No encontré un profesor asignado "
+            f"para {materia_buscada}."
         )
 
     lineas = [
@@ -249,7 +339,10 @@ def construir_respuesta_profesores(semestre):
 
     return "\n".join(lineas)
 
-def construir_respuesta_calificaciones(matricula):
+def construir_respuesta_calificaciones(
+    matricula,
+    materia_buscada=None,
+):
     calificaciones = (
         obtener_calificaciones_por_estudiante(
             matricula
@@ -262,7 +355,33 @@ def construir_respuesta_calificaciones(matricula):
             "para este estudiante."
         )
 
-    lineas = ["Estas son tus calificaciones:"]
+    consulta_especifica = (
+        materia_buscada is not None
+    )
+
+    if consulta_especifica:
+        calificaciones = [
+            calificacion
+            for calificacion in calificaciones
+            if calificacion["materia"]
+            == materia_buscada
+        ]
+
+        if not calificaciones:
+            return (
+                f"No encontré calificaciones "
+                f"registradas para "
+                f"{materia_buscada}."
+            )
+
+        lineas = [
+            f"Estas son tus calificaciones de "
+            f"{materia_buscada}:"
+        ]
+    else:
+        lineas = [
+            "Estas son tus calificaciones:"
+        ]
 
     for calificacion in calificaciones:
         lineas.append(
@@ -274,22 +393,26 @@ def construir_respuesta_calificaciones(matricula):
             f"{calificacion['promedio']:.2f}."
         )
 
-    promedio_general = round(
-        sum(
-            calificacion["promedio"]
-            for calificacion in calificaciones
-        ) / len(calificaciones),
-        2,
-    )
+    if not consulta_especifica:
+        promedio_general = round(
+            sum(
+                calificacion["promedio"]
+                for calificacion in calificaciones
+            ) / len(calificaciones),
+            2,
+        )
 
-    lineas.append(
-        f"Tu promedio general es "
-        f"{promedio_general:.2f}."
-    )
+        lineas.append(
+            f"Tu promedio general es "
+            f"{promedio_general:.2f}."
+        )
 
     return "\n".join(lineas)
 
-def construir_respuesta_examenes(matricula):
+def construir_respuesta_examenes(
+    matricula,
+    materia_buscada=None,
+):
     examenes = obtener_examenes_por_estudiante(
         matricula
     )
@@ -300,7 +423,25 @@ def construir_respuesta_examenes(matricula):
             "para este estudiante."
         )
 
-    lineas = ["Estos son tus exámenes:"]
+    if materia_buscada is not None:
+        examenes = [
+            examen
+            for examen in examenes
+            if examen["materia"] == materia_buscada
+        ]
+
+        if not examenes:
+            return (
+                f"No encontré exámenes registrados "
+                f"para {materia_buscada}."
+            )
+
+        lineas = [
+            f"Estos son tus exámenes de "
+            f"{materia_buscada}:"
+        ]
+    else:
+        lineas = ["Estos son tus exámenes:"]
 
     for examen in examenes:
         fecha = date.fromisoformat(
@@ -352,11 +493,37 @@ def procesar_consulta(pregunta, estudiante):
     respuesta, tipo, categoria, confianza = (
         buscar_respuesta(pregunta)
     )
-
     if categoria == "horario":
-        respuesta = construir_respuesta_horario(
-            estudiante["matricula"]
+        materia_identificada = identificar_materia(
+            pregunta
         )
+
+        if (
+            materia_identificada is not None
+            and materia_identificada["semestre"]
+            != estudiante["semestre"]
+        ):
+            respuesta = (
+                f"La materia "
+                f"{materia_identificada['nombre']} "
+                f"pertenece al "
+                f"{materia_identificada['semestre']}.º "
+                f"semestre y no aparece entre tus "
+                f"materias inscritas de "
+                f"{estudiante['semestre']}.º semestre."
+            )
+        else:
+            materia_buscada = None
+
+            if materia_identificada is not None:
+                materia_buscada = (
+                    materia_identificada["nombre"]
+                )
+
+            respuesta = construir_respuesta_horario(
+                estudiante["matricula"],
+                materia_buscada,
+            )
 
     elif categoria == "materia":
         respuesta = construir_respuesta_materias(
@@ -364,19 +531,102 @@ def procesar_consulta(pregunta, estudiante):
         )
 
     elif categoria == "profesor":
-        respuesta = construir_respuesta_profesores(
-            estudiante["semestre"]
+        materia_identificada = identificar_materia(
+            pregunta
         )
 
+        if (
+            materia_identificada is not None
+            and materia_identificada["semestre"]
+            != estudiante["semestre"]
+        ):
+            respuesta = (
+                f"La materia "
+                f"{materia_identificada['nombre']} "
+                f"pertenece al "
+                f"{materia_identificada['semestre']}.º "
+                f"semestre y no aparece entre tus "
+                f"materias inscritas de "
+                f"{estudiante['semestre']}.º semestre."
+            )
+        else:
+            materia_buscada = None
+
+            if materia_identificada is not None:
+                materia_buscada = (
+                    materia_identificada["nombre"]
+                )
+
+            respuesta = construir_respuesta_profesores(
+                estudiante["semestre"],
+                materia_buscada,
+            )
+            
     elif categoria == "calificacion":
-        respuesta = construir_respuesta_calificaciones(
-            estudiante["matricula"]
+        materia_identificada = identificar_materia(
+            pregunta
         )
+
+        if (
+            materia_identificada is not None
+            and materia_identificada["semestre"]
+            != estudiante["semestre"]
+        ):
+            respuesta = (
+                f"La materia "
+                f"{materia_identificada['nombre']} "
+                f"pertenece al "
+                f"{materia_identificada['semestre']}.º "
+                f"semestre y no aparece entre tus "
+                f"materias inscritas de "
+                f"{estudiante['semestre']}.º semestre."
+            )
+        else:
+            materia_buscada = None
+
+            if materia_identificada is not None:
+                materia_buscada = (
+                    materia_identificada["nombre"]
+                )
+
+            respuesta = (
+                construir_respuesta_calificaciones(
+                    estudiante["matricula"],
+                    materia_buscada,
+                )
+            )
 
     elif categoria == "examen":
-        respuesta = construir_respuesta_examenes(
-            estudiante["matricula"]
+        materia_identificada = identificar_materia(
+            pregunta
         )
+
+        if (
+            materia_identificada is not None
+            and materia_identificada["semestre"]
+            != estudiante["semestre"]
+        ):
+            respuesta = (
+                f"La materia "
+                f"{materia_identificada['nombre']} "
+                f"pertenece al "
+                f"{materia_identificada['semestre']}.º "
+                f"semestre y no aparece entre tus "
+                f"materias inscritas de "
+                f"{estudiante['semestre']}.º semestre."
+            )
+        else:
+            materia_buscada = None
+
+            if materia_identificada is not None:
+                materia_buscada = (
+                    materia_identificada["nombre"]
+                )
+
+            respuesta = construir_respuesta_examenes(
+                estudiante["matricula"],
+                materia_buscada,
+            )
 
     elif categoria == "aviso":
         respuesta = construir_respuesta_avisos(
