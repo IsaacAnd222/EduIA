@@ -21,24 +21,44 @@ datos_entrenamiento = [
     ("buenos días", "saludo"),
     ("buenas tardes", "saludo"),
     ("qué tal", "saludo"),
+    ("buen día", "saludo"),
+    ("hola eduia", "saludo"),
+    ("cómo estás", "saludo"),
 
     # Capacidades
     ("qué puedes hacer", "capacidades"),
     ("en qué me puedes ayudar", "capacidades"),
+    ("cómo puedes ayudarme", "capacidades"),
+    ("qué información puedes darme", "capacidades"),
+    ("dime qué sabes hacer", "capacidades"),
 
-    # Horarios y materias
+
+    # Horarios
     ("cuál es mi horario", "horario"),
     ("qué horario tengo", "horario"),
     ("qué clases tengo", "horario"),
-    ("qué materias tengo", "materia"),
     ("a qué hora entro", "horario"),
+    ("en qué salón tengo sistemas embebidos", "horario"),
+    ("qué día tengo inteligencia artificial", "horario"),
+    ("a qué hora tengo redes de computadoras ii", "horario"),
+    ("dónde veo mi horario", "horario"),
+    ("a qué hora comienzan mis clases", "horario"),
+    ("a qué hora salgo", "horario"),
+    ("dónde puedo consultar mis clases", "horario"),
+    ("cuál es el salón de mi clase", "horario"),
+    ("en qué salón me toca inteligencia artificial", "horario"),
+
+    #materias
+    ("qué materias tengo", "materia"),
     ("cuáles son mis materias", "materia"),
     ("qué materias curso", "materia"),
     ("lista de materias", "materia"),
     ("muéstrame mis materias", "materia"),
-    ("en qué salón tengo sistemas embebidos", "horario"),
-    ("qué día tengo inteligencia artificial", "horario"),
-    ("a qué hora tengo redes de computadoras ii", "horario"),
+    ("qué asignaturas llevo", "materia"),
+    ("cuáles son mis asignaturas", "materia"),
+    ("qué materias tengo inscritas", "materia"),
+    ("qué cursos llevo este semestre", "materia"),
+    ("muéstrame mis asignaturas", "materia"),
 
     # Exámenes
     ("cuándo tengo examen", "examen"),
@@ -49,6 +69,11 @@ datos_entrenamiento = [
     ("cuándo es mi examen de inteligencia artificial", "examen"),
     ("en qué salón es mi examen de sistemas embebidos", "examen"),
     ("a qué hora es el examen de redes de computadoras ii", "examen"),
+    ("cuáles son mis próximas evaluaciones", "examen"),
+    ("cuándo es mi próximo examen", "examen"),
+    ("dónde presentaré mi examen", "examen"),
+    ("muéstrame el horario de exámenes", "examen"),
+    ("tengo algún examen pronto", "examen"),
 
     # Profesores
     ("quiénes son mis profesores", "profesor"),
@@ -61,6 +86,11 @@ datos_entrenamiento = [
     ("quién imparte inteligencia artificial", "profesor"),
     ("quién da sistemas embebidos", "profesor"),
     ("quién es el profesor de redes de computadoras ii", "profesor"),
+    ("cuáles son los docentes de mi semestre", "profesor"),
+    ("qué maestros me dan clases", "profesor"),
+    ("quién enseña mis asignaturas", "profesor"),
+    ("muéstrame los datos de mis profesores", "profesor"),
+    ("cuál es el correo de mi maestro", "profesor"),
 
     # Calificaciones
     ("cuáles son mis calificaciones", "calificacion"),
@@ -70,12 +100,25 @@ datos_entrenamiento = [
     ("qué calificación tengo en inteligencia artificial", "calificacion"),
     ("cuál es mi promedio de sistemas embebidos", "calificacion"),
     ("cuánto saqué en redes de computadoras ii", "calificacion"),
+    ("dónde veo mis notas", "calificacion"),
+    ("cuánto saqué", "calificacion"),
+    ("qué promedio tengo", "calificacion"),
+    ("muéstrame los resultados de mis materias", "calificacion"),
+    ("quiero consultar mi boleta", "calificacion"),
+    ("qué nota obtuve en inteligencia artificial", "calificacion"),
+    ("qué materias tengo reprobadas", "calificacion"),
+    ("dónde miro mis calificasiones", "calificacion"),
 
     # Avisos escolares
     ("hay avisos escolares", "aviso"),
     ("cuáles son los avisos", "aviso"),
     ("hay alguna actividad escolar", "aviso"),
     ("qué eventos tiene la escuela", "aviso"),
+    ("qué novedades hay en la universidad", "aviso"),
+    ("muéstrame los comunicados escolares", "aviso"),
+    ("tengo avisos pendientes", "aviso"),
+    ("hay información escolar reciente", "aviso"),
+    ("cuáles son los próximos eventos", "aviso"),
 
     # Ayuda académica
     ("ayúdame a estudiar", "academica"),
@@ -87,6 +130,70 @@ datos_entrenamiento = [
     ("explícame rtos", "academica"),
     ("ponme un ejercicio", "academica"),
     ("hazme un resumen", "academica"),
+    ("necesito ayuda con una materia", "academica"),
+    ("dame un ejemplo", "academica"),
+    ("ayúdame a entender un tema", "academica"),
+    ("hazme una explicación", "academica"),
+    ("dame un ejercicio de práctica", "academica"),
+
+    # Inscripciones
+    ("cuándo son las inscripciones", "inscripcion"),
+    ("cómo puedo inscribirme", "inscripcion"),
+    ("dónde realizo mi inscripción", "inscripcion"),
+    ("qué necesito para inscribirme", "inscripcion"),
+    ("cuál es el proceso de inscripción", "inscripcion"),
+    ("qué documentos piden para la inscripción", "inscripcion"),
+    ("quiero registrar mis materias para el próximo periodo","inscripcion"),
+    ("cómo me inscribo al siguiente semestre", "inscripcion"),
+
+    # Biblioteca
+    ("dónde está la biblioteca", "biblioteca"),
+    ("cuál es el horario de la biblioteca", "biblioteca"),
+    ("puedo pedir libros prestados", "biblioteca"),
+    ("qué servicios ofrece la biblioteca", "biblioteca"),
+    ("cómo solicito un libro en la biblioteca", "biblioteca"),
+    ("hay espacios para estudiar en la biblioteca", "biblioteca"),
+
+    # Becas
+    ("qué becas están disponibles", "beca"),
+    ("cómo puedo solicitar una beca", "beca"),
+    ("qué requisitos necesito para una beca", "beca"),
+    ("cuándo abre la convocatoria de becas", "beca"),
+    ("dónde consulto información sobre becas", "beca"),
+    ("la universidad ofrece apoyo económico", "beca"),
+    ("qué documentos solicitan para la beca", "beca"),
+    ("hay alguna convocatoria para estudiantes", "beca"),
+    ("dónde pregunto por las vecas", "beca"),
+
+    # Titulación
+    ("cómo puedo titularme", "titulacion"),
+    ("qué opciones de titulación existen", "titulacion"),
+    ("qué documentos necesito para titularme", "titulacion"),
+    ("dónde inicio mi proceso de titulación", "titulacion"),
+    ("cuáles son los requisitos de titulación", "titulacion"),
+    ("de qué formas puedo obtener mi título", "titulacion"),
+    ("puedo hacer una tesis para graduarme", "titulacion"),
+    ("qué papeles debo entregar para mi título", "titulacion"),
+    ("dónde pregunto por la titulasion", "titulacion"),
+
+    # Laboratorios
+    ("dónde están los laboratorios", "laboratorio"),
+    ("cuál es el horario de los laboratorios", "laboratorio"),
+    ("cómo puedo utilizar un laboratorio", "laboratorio"),
+    ("qué laboratorios tiene la universidad", "laboratorio"),
+    ("necesito reservar el laboratorio", "laboratorio"),
+    ("puedo entrar al lavotatorio", "laboratorio"),
+
+
+    # Cafetería
+    ("dónde está la cafetería", "cafeteria"),
+    ("cuál es el horario de la cafetería", "cafeteria"),
+    ("qué alimentos vende la cafetería", "cafeteria"),
+    ("cuánto cuesta la comida en la cafetería", "cafeteria"),
+    ("la cafetería está abierta", "cafeteria"),
+    ("qué menú tienen hoy", "cafeteria"),
+    ("abre la cafetería los sábados", "cafeteria"),
+    ("a qué hora abre la cafeteira", "cafeteria"),
 ]
 
 preguntas_conocidas = [
@@ -138,8 +245,9 @@ RESPUESTA_DESCONOCIDA = (
 RESPUESTAS_CATEGORIA = {
     "saludo": "Hola, ¿en qué puedo ayudarte?",
     "capacidades": (
-        "Puedo ayudarte con horarios, exámenes, profesores, "
-        "calificaciones, avisos y temas académicos."
+        "Puedo ayudarte con horarios, materias, exámenes, profesores, "
+        "calificaciones, inscripciones, biblioteca, becas, titulación, "
+        "laboratorios, cafetería, avisos y temas académicos."
     ),
     "horario": "Puedo consultar tu horario escolar.",
     "materia": "Puedo consultar tus materias inscritas.",
@@ -150,6 +258,58 @@ RESPUESTAS_CATEGORIA = {
     "academica": (
         "Puedo explicarte el tema, mostrarte un ejemplo "
         "y proponerte un ejercicio."
+    ),
+    "inscripcion": (
+        "Para realizar tu inscripción:\n"
+        "1. Consulta el periodo de inscripciones vigente.\n"
+        "2. Verifica los documentos y requisitos solicitados.\n"
+        "3. Entrega la documentación o completa el registro indicado.\n"
+        "4. Confirma que tus materias hayan quedado registradas.\n"
+        "Para conocer fechas y requisitos oficiales, acude a Servicios Escolares."
+    ),
+
+    "biblioteca": (
+        "La biblioteca ofrece préstamo de libros, consulta de material "
+        "académico y espacios de estudio.\n"
+        "Para utilizar el préstamo, presenta tu identificación o matrícula "
+        "vigente y consulta la disponibilidad del material.\n"
+        "Los horarios y condiciones del servicio pueden confirmarse "
+        "directamente en la biblioteca."
+    ),
+
+    "beca": (
+        "Para solicitar una beca:\n"
+        "1. Consulta las convocatorias disponibles.\n"
+        "2. Revisa los requisitos y fechas de registro.\n"
+        "3. Prepara la documentación solicitada.\n"
+        "4. Entrega tu solicitud dentro del periodo establecido.\n"
+        "La información oficial se encuentra disponible en Servicios Escolares."
+    ),
+
+    "titulacion": (
+        "Para iniciar tu proceso de titulación:\n"
+        "1. Verifica que cumplas con los créditos y requisitos académicos.\n"
+        "2. Consulta las modalidades de titulación disponibles.\n"
+        "3. Reúne los documentos solicitados.\n"
+        "4. Registra tu trámite en el área de Titulación o Servicios Escolares.\n"
+        "Las opciones y requisitos pueden cambiar, por lo que debes consultar "
+        "la convocatoria vigente."
+    ),
+
+    "laboratorio": (
+        "Los laboratorios se utilizan para realizar prácticas académicas.\n"
+        "Antes de ingresar, consulta el horario, la disponibilidad y las "
+        "reglas de seguridad correspondientes.\n"
+        "Si necesitas utilizar un laboratorio fuera de clase, solicita "
+        "autorización o reservación con el profesor o responsable del área."
+    ),
+
+    "cafeteria": (
+        "La cafetería universitaria ofrece alimentos y bebidas para los "
+        "estudiantes.\n"
+        "El menú, los precios y los horarios pueden variar, por lo que debes "
+        "consultarlos directamente en la cafetería.\n"
+        "Antes de acudir, verifica que el servicio se encuentre disponible."
     ),
     "desconocida": RESPUESTA_DESCONOCIDA,
 }
@@ -164,6 +324,12 @@ TIPOS_CATEGORIA = {
     "calificacion": "escolar",
     "aviso": "escolar",
     "academica": "académica",
+    "inscripcion": "escolar",
+    "biblioteca": "escolar",
+    "beca": "escolar",
+    "titulacion": "escolar",
+    "laboratorio": "escolar",
+    "cafeteria": "escolar",
     "desconocida": "desconocida",
 }
 
@@ -183,6 +349,7 @@ def buscar_respuesta(pregunta_usuario):
 
     indice_mejor_resultado = similitudes.argmax()
     confianza = float(similitudes[indice_mejor_resultado])
+    confianza = max(0.0, min(1.0, confianza))
 
     if confianza < UMBRAL_CONFIANZA:
         categoria = "desconocida"
