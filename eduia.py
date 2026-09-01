@@ -1,5 +1,8 @@
 from datetime import date
+from difflib import get_close_matches
+import re
 import unicodedata
+
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
@@ -31,7 +34,9 @@ datos_entrenamiento = [
     ("cómo puedes ayudarme", "capacidades"),
     ("qué información puedes darme", "capacidades"),
     ("dime qué sabes hacer", "capacidades"),
-
+    ("qué tipo de preguntas puedes responder", "capacidades"),
+    ("para qué eres útil", "capacidades"),
+    ("qué consultas puedes atender", "capacidades"),
 
     # Horarios
     ("cuál es mi horario", "horario"),
@@ -91,6 +96,10 @@ datos_entrenamiento = [
     ("quién enseña mis asignaturas", "profesor"),
     ("muéstrame los datos de mis profesores", "profesor"),
     ("cuál es el correo de mi maestro", "profesor"),
+    ("dame el correo del profesor de una materia", "profesor"),
+    ("necesito el contacto de quien imparte una materia", "profesor"),
+    ("cuál es el correo de quien enseña una materia", "profesor"),
+    ("dame el contacto del docente de redes de computadoras ii", "profesor"),
 
     # Calificaciones
     ("cuáles son mis calificaciones", "calificacion"),
@@ -108,6 +117,10 @@ datos_entrenamiento = [
     ("qué nota obtuve en inteligencia artificial", "calificacion"),
     ("qué materias tengo reprobadas", "calificacion"),
     ("dónde miro mis calificasiones", "calificacion"),
+    ("quiero saber si aprobé una materia", "calificacion"),
+    ("cómo sé si pasé inteligencia artificial", "calificacion"),
+    ("quiero saber si aprobé inteligencia artificial", "calificacion"),
+    ("aprobé o reprobé una materia", "calificacion"),
 
     # Avisos escolares
     ("hay avisos escolares", "aviso"),
@@ -164,6 +177,8 @@ datos_entrenamiento = [
     ("qué documentos solicitan para la beca", "beca"),
     ("hay alguna convocatoria para estudiantes", "beca"),
     ("dónde pregunto por las vecas", "beca"),
+    ("hay ayuda económica para pagar mis estudios", "beca"),
+    ("puedo recibir apoyo para estudiar", "beca"),
 
     # Titulación
     ("cómo puedo titularme", "titulacion"),
@@ -175,6 +190,9 @@ datos_entrenamiento = [
     ("puedo hacer una tesis para graduarme", "titulacion"),
     ("qué papeles debo entregar para mi título", "titulacion"),
     ("dónde pregunto por la titulasion", "titulacion"),
+    ("qué modalidades existen para terminar la carrera", "titulacion"),
+    ("dónde entrego mi expediente para obtener el grado", "titulacion"),
+    ("cómo obtengo el grado al finalizar la carrera", "titulacion"),
 
     # Laboratorios
     ("dónde están los laboratorios", "laboratorio"),
@@ -183,7 +201,8 @@ datos_entrenamiento = [
     ("qué laboratorios tiene la universidad", "laboratorio"),
     ("necesito reservar el laboratorio", "laboratorio"),
     ("puedo entrar al lavotatorio", "laboratorio"),
-
+    ("debo reservar el laboratorio para una práctica", "laboratorio"),
+    ("cómo aparto un laboratorio antes de usarlo", "laboratorio"),
 
     # Cafetería
     ("dónde está la cafetería", "cafeteria"),
@@ -194,6 +213,8 @@ datos_entrenamiento = [
     ("qué menú tienen hoy", "cafeteria"),
     ("abre la cafetería los sábados", "cafeteria"),
     ("a qué hora abre la cafeteira", "cafeteria"),
+    ("venden café en la cafetería", "cafeteria"),
+    ("dónde puedo comprar café en la universidad", "cafeteria"),
 ]
 
 preguntas_conocidas = [
@@ -333,29 +354,314 @@ TIPOS_CATEGORIA = {
     "desconocida": "desconocida",
 }
 
-vectorizador = TfidfVectorizer(
+vectorizador_palabras = TfidfVectorizer(
     strip_accents="unicode",
     stop_words=PALABRAS_IGNORADAS,
+    ngram_range=(1, 1),
+    sublinear_tf=True,
 )
-matriz_preguntas = vectorizador.fit_transform(preguntas_conocidas)
+
+matriz_palabras = vectorizador_palabras.fit_transform(
+    preguntas_conocidas
+)
+
+VOCABULARIO_CONOCIDO = set(
+    vectorizador_palabras.get_feature_names_out()
+)
+
+PALABRAS_CLAVE_CORREGIBLES = {
+    "horario",
+    "horarios",
+    "biblioteca",
+    "libro",
+    "libros",
+    "beca",
+    "becas",
+    "titulacion",
+    "titulo",
+    "laboratorio",
+    "laboratorios",
+    "cafeteria",
+    "calificacion",
+    "calificaciones",
+    "inscripcion",
+    "inscripciones",
+    "profesor",
+    "profesores",
+    "examen",
+    "examenes",
+    "materia",
+    "materias",
+    "aviso",
+    "avisos",
+}
+
+def corregir_ortografia(texto):
+    texto_normalizado = normalizar_texto(texto)
+
+    palabras = re.findall(
+        r"\b\w+\b",
+        texto_normalizado,
+    )
+
+    palabras_corregidas = []
+
+    for palabra in palabras:
+        if (
+            palabra in VOCABULARIO_CONOCIDO
+            or palabra in PALABRAS_IGNORADAS
+            or len(palabra) < 4
+        ):
+            palabras_corregidas.append(palabra)
+            continue
+
+        # Las palabras cortas necesitan un límite
+        # ligeramente menor para detectar beka -> beca.
+        if len(palabra) <= 4:
+            limite = 0.75
+        else:
+            limite = 0.82
+
+        coincidencias = get_close_matches(
+            palabra,
+            PALABRAS_CLAVE_CORREGIBLES,
+            n=1,
+            cutoff=limite,
+        )
+
+        if coincidencias:
+            palabras_corregidas.append(
+                coincidencias[0]
+            )
+        else:
+            palabras_corregidas.append(palabra)
+
+    return " ".join(palabras_corregidas)
+
+def identificar_categoria_prioritaria(texto):
+    texto_normalizado = normalizar_texto(texto)
+
+    palabras = set(
+        re.findall(
+            r"\b\w+\b",
+            texto_normalizado,
+        )
+    )
+
+    palabras_profesor = {
+        "profesor",
+        "profesores",
+        "maestro",
+        "maestros",
+        "docente",
+        "docentes",
+        "correo",
+        "contacto",
+        "imparte",
+        "ensena",
+    }
+
+    palabras_horario = {
+        "horario",
+        "hora",
+        "salon",
+        "dia",
+        "cuando",
+    }
+
+    tiene_indicador_profesor = bool(
+        palabras & palabras_profesor
+    )
+
+    tiene_indicador_horario = bool(
+        palabras & palabras_horario
+    )
+
+    if (
+        tiene_indicador_profesor
+        and not tiene_indicador_horario
+    ):
+        return "profesor"
+
+    return None
+
+def es_consulta_ambigua_o_fuera(texto):
+    texto_normalizado = normalizar_texto(texto)
+
+    palabras = set(
+        re.findall(
+            r"\b\w+\b",
+            texto_normalizado,
+        )
+    )
+
+    # Temas que EduIA todavía no atiende.
+    palabras_fuera_alcance = {
+        "clima",
+        "futbol",
+        "partido",
+        "chiste",
+        "transporte",
+        "ruta",
+        "wifi",
+        "contrasena",
+        "pelicula",
+    }
+
+    if palabras & palabras_fuera_alcance:
+        return True
+
+    # “Documentos” necesita indicar para qué trámite.
+    palabras_documentos = {
+        "documento",
+        "documentos",
+        "papel",
+        "papeles",
+        "requisito",
+        "requisitos",
+    }
+
+    contexto_documentos = {
+        "inscripcion",
+        "inscripciones",
+        "inscribirme",
+        "reinscripcion",
+        "reinscribirme",
+        "beca",
+        "becas",
+        "titulacion",
+        "titulo",
+        "titularme",
+    }
+
+    if (
+        palabras & palabras_documentos
+        and not palabras & contexto_documentos
+    ):
+        return True
+
+    # “Abierto” necesita indicar qué servicio.
+    palabras_apertura = {
+        "abre",
+        "abierto",
+        "abierta",
+    }
+
+    contexto_apertura = {
+        "cafeteria",
+        "cafeteira",
+        "biblioteca",
+        "laboratorio",
+        "laboratorios",
+    }
+
+    if (
+        palabras & palabras_apertura
+        and not palabras & contexto_apertura
+    ):
+        return True
+
+    # “Cuánto cuesta” necesita indicar el producto.
+    palabras_precio = {
+        "cuesta",
+        "costo",
+        "precio",
+        "vale",
+    }
+
+    contexto_precio = {
+        "cafeteria",
+        "comida",
+        "alimento",
+        "alimentos",
+        "menu",
+        "desayuno",
+        "bebida",
+        "bebidas",
+    }
+
+    if (
+        palabras & palabras_precio
+        and not palabras & contexto_precio
+    ):
+        return True
+
+    return False
 
 def buscar_respuesta(pregunta_usuario):
-    vector_pregunta = vectorizador.transform([pregunta_usuario])
+    pregunta_corregida = corregir_ortografia(
+        pregunta_usuario
+    )
+
+    if es_consulta_ambigua_o_fuera(
+        pregunta_corregida
+    ):
+        categoria = "desconocida"
+        confianza = 0.0
+
+        return (
+            RESPUESTAS_CATEGORIA[categoria],
+            TIPOS_CATEGORIA[categoria],
+            categoria,
+            confianza,
+        )
+
+    vector_pregunta_palabras = (
+        vectorizador_palabras.transform(
+            [pregunta_corregida]
+        )
+    )
 
     similitudes = cosine_similarity(
-        vector_pregunta,
-        matriz_preguntas,
+        vector_pregunta_palabras,
+        matriz_palabras,
     )[0]
 
     indice_mejor_resultado = similitudes.argmax()
-    confianza = float(similitudes[indice_mejor_resultado])
-    confianza = max(0.0, min(1.0, confianza))
+    confianza = float(
+        similitudes[indice_mejor_resultado]
+    )
+    confianza = max(
+        0.0,
+        min(1.0, confianza),
+    )
 
-    if confianza < UMBRAL_CONFIANZA:
+    categoria_prioritaria = (
+        identificar_categoria_prioritaria(
+            pregunta_usuario
+        )
+    )
+
+    if categoria_prioritaria is not None:
+        categoria = categoria_prioritaria
+
+        similitudes_categoria = [
+            similitud
+            for similitud, categoria_ejemplo
+            in zip(
+                similitudes,
+                categorias_conocidas,
+            )
+            if categoria_ejemplo == categoria
+        ]
+
+        confianza = max(
+            similitudes_categoria,
+            default=confianza,
+        )
+
+        confianza = max(
+            0.0,
+            min(1.0, float(confianza)),
+        )
+
+    elif confianza < UMBRAL_CONFIANZA:
         categoria = "desconocida"
-    else:
-        categoria = categorias_conocidas[indice_mejor_resultado]
 
+    else:
+        categoria = categorias_conocidas[
+            indice_mejor_resultado
+        ]
     tipo = TIPOS_CATEGORIA[categoria]
     respuesta = RESPUESTAS_CATEGORIA[categoria]
 
