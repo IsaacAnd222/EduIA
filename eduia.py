@@ -645,18 +645,187 @@ def es_consulta_ambigua_o_fuera(texto):
 
     # Temas que EduIA todavía no atiende.
     palabras_fuera_alcance = {
+        "cancion",
+        "canciones",
         "clima",
+        "cocinar",
+        "doctor",
+        "doctora",
         "futbol",
+        "hospital",
+        "medico",
+        "medica",
+        "musica",
+        "noticia",
+        "noticias",
         "partido",
+        "pelicula",
+        "politica",
+        "politicas",
+        "receta",
+        "recetas",
+        "salud",
         "chiste",
         "transporte",
         "ruta",
         "wifi",
         "contrasena",
-        "pelicula",
     }
 
     if palabras & palabras_fuera_alcance:
+        return True
+
+    # Comprar productos externos no forma parte de los servicios
+    # de EduIA. Se permite cuando la consulta habla de alimentos
+    # o de la cafetería universitaria.
+    palabras_compra = {
+        "comprar",
+        "compro",
+        "venden",
+    }
+
+    contexto_cafeteria = {
+        "alimento",
+        "alimentos",
+        "bebida",
+        "bebidas",
+        "cafe",
+        "cafeteria",
+        "cafeteira",
+        "comida",
+        "desayuno",
+        "menu",
+    }
+
+    if (
+        palabras & palabras_compra
+        and not palabras & contexto_cafeteria
+    ):
+        return True
+
+    # Palabras que sí proporcionan un contexto universitario
+    # suficiente para interpretar una consulta.
+    contexto_universitario = {
+        "academica",
+        "academico",
+        "asignatura",
+        "asignaturas",
+        "anuncio",
+        "anuncios",
+        "aviso",
+        "avisos",
+        "beca",
+        "becas",
+        "biblioteca",
+        "boleta",
+        "cafe",
+        "cafeteria",
+        "cafeteira",
+        "calificacion",
+        "calificaciones",
+        "clase",
+        "clases",
+        "comida",
+        "comunicado",
+        "comunicados",
+        "convocatoria",
+        "convocatorias",
+        "correo",
+        "docente",
+        "docentes",
+        "evaluacion",
+        "evaluaciones",
+        "examen",
+        "examenes",
+        "grado",
+        "horario",
+        "inscripcion",
+        "inscripciones",
+        "inscribirme",
+        "laboratorio",
+        "laboratorios",
+        "libro",
+        "libros",
+        "maestro",
+        "maestros",
+        "materia",
+        "materias",
+        "menu",
+        "nota",
+        "notas",
+        "parcial",
+        "parciales",
+        "prestamo",
+        "profesor",
+        "profesores",
+        "promedio",
+        "reinscripcion",
+        "reinscribirme",
+        "salon",
+        "tesis",
+        "titulacion",
+        "titularme",
+        "titulo",
+    }
+
+    tiene_contexto = bool(
+        palabras & contexto_universitario
+    )
+
+    # Pronombres y referencias como “lo” o “alguno” necesitan
+    # información previa que EduIA no debe inventar.
+    referencias_sin_contexto = {
+        "algo",
+        "alguna",
+        "alguno",
+        "algunas",
+        "algunos",
+        "eso",
+        "esa",
+        "ese",
+        "esto",
+        "lo",
+        "solicitarlo",
+    }
+
+    if (
+        palabras & referencias_sin_contexto
+        and not tiene_contexto
+    ):
+        return True
+
+    # Términos demasiado generales requieren indicar de qué
+    # servicio, trámite o recurso se está hablando.
+    terminos_genericos = {
+        "disponible",
+        "disponibles",
+        "opcion",
+        "opciones",
+        "proceso",
+        "procesos",
+        "tramite",
+        "tramites",
+    }
+
+    if (
+        palabras & terminos_genericos
+        and not tiene_contexto
+    ):
+        return True
+
+    frases_sin_contexto = {
+        "necesito llevar",
+        "debo llevar",
+        "tengo que llevar",
+    }
+
+    if (
+        any(
+            frase in texto_normalizado
+            for frase in frases_sin_contexto
+        )
+        and not tiene_contexto
+    ):
         return True
 
     # “Documentos” necesita indicar para qué trámite.
