@@ -394,10 +394,23 @@ PALABRAS_CLAVE_CORREGIBLES = {
     "docentes",
     "examen",
     "examenes",
+    "evaluacion",
+    "evaluaciones",
     "materia",
     "materias",
     "aviso",
     "avisos",
+}
+
+CORRECCIONES_DIRECTAS = {
+    "abiso": "aviso",
+    "abisos": "avisos",
+    "evaluasion": "evaluacion",
+    "evaluasiones": "evaluaciones",
+    "kuando": "cuando",
+    "nuebo": "nuevo",
+    "procsima": "proxima",
+    "procsimo": "proximo",
 }
 
 def corregir_ortografia(texto):
@@ -411,6 +424,12 @@ def corregir_ortografia(texto):
     palabras_corregidas = []
 
     for palabra in palabras:
+        if palabra in CORRECCIONES_DIRECTAS:
+            palabras_corregidas.append(
+                CORRECCIONES_DIRECTAS[palabra]
+            )
+            continue
+
         if (
             palabra in VOCABULARIO_CONOCIDO
             or palabra in PALABRAS_IGNORADAS
@@ -503,6 +522,8 @@ def identificar_categoria_prioritaria(texto):
             "reinscripcion",
             "reinscribirme",
             "reinscribo",
+            "reinscrito",
+            "reinscrita",
         },
         "horario": {
             "horario",
@@ -553,6 +574,10 @@ def identificar_categoria_prioritaria(texto):
         "cafeteria": {
             "cafeteria",
             "cafeteira",
+            "almuerzo",
+            "almuerzos",
+            "bebida",
+            "bebidas",
             "menu",
             "comida",
             "alimentos",
@@ -562,13 +587,23 @@ def identificar_categoria_prioritaria(texto):
     # Algunas intenciones se expresan mejor mediante frases.
     frases_prioritarias = (
         ("profesor", ("a cargo",)),
-        ("capacidades", ("puedes hacer", "eres capaz")),
+        (
+            "capacidades",
+            (
+                "puedes hacer",
+                "eres capaz",
+                "ayuda universitaria",
+                "servicios puedes consultar",
+            ),
+        ),
         ("aviso", ("informacion nueva",)),
         (
             "inscripcion",
             (
+                "confirmar mi carga",
                 "registrar el semestre",
                 "registrar mis materias",
+                "registro semestral",
                 "renovar mi inscripcion",
             ),
         ),
@@ -583,7 +618,24 @@ def identificar_categoria_prioritaria(texto):
                 "convocatoria de becas",
             ),
         ),
-        ("laboratorio", ("agendar una practica", "reservar una practica")),
+        (
+            "academica",
+            (
+                "para aprender",
+                "para comprender",
+                "para entender",
+            ),
+        ),
+        (
+            "laboratorio",
+            (
+                "agendar una practica",
+                "apartar una practica",
+                "reservar una practica",
+                "reservo una practica",
+            ),
+        ),
+        ("materia", ("carga academica",)),
     )
 
     for categoria, frases in frases_prioritarias:
@@ -598,13 +650,13 @@ def identificar_categoria_prioritaria(texto):
     orden_prioridad = (
         "capacidades",
         "profesor",
+        "titulacion",
         "calificacion",
         "examen",
         "inscripcion",
         "aviso",
         "biblioteca",
         "beca",
-        "titulacion",
         "laboratorio",
         "cafeteria",
         "horario",
@@ -645,6 +697,7 @@ def es_consulta_ambigua_o_fuera(texto):
 
     # Temas que EduIA todavía no atiende.
     palabras_fuera_alcance = {
+        "aeropuerto",
         "cancion",
         "canciones",
         "clima",
@@ -652,12 +705,15 @@ def es_consulta_ambigua_o_fuera(texto):
         "doctor",
         "doctora",
         "futbol",
+        "gripe",
         "hospital",
         "medico",
         "medica",
         "musica",
         "noticia",
         "noticias",
+        "oferta",
+        "ofertas",
         "partido",
         "pelicula",
         "politica",
@@ -723,6 +779,7 @@ def es_consulta_ambigua_o_fuera(texto):
         "cafeteira",
         "calificacion",
         "calificaciones",
+        "carrera",
         "clase",
         "clases",
         "comida",
@@ -750,6 +807,8 @@ def es_consulta_ambigua_o_fuera(texto):
         "maestros",
         "materia",
         "materias",
+        "modalidad",
+        "modalidades",
         "menu",
         "nota",
         "notas",
@@ -761,6 +820,8 @@ def es_consulta_ambigua_o_fuera(texto):
         "promedio",
         "reinscripcion",
         "reinscribirme",
+        "reinscrito",
+        "reinscrita",
         "salon",
         "tesis",
         "titulacion",
@@ -797,14 +858,21 @@ def es_consulta_ambigua_o_fuera(texto):
     # Términos demasiado generales requieren indicar de qué
     # servicio, trámite o recurso se está hablando.
     terminos_genericos = {
+        "cupo",
         "disponible",
         "disponibles",
+        "escoger",
+        "elegir",
         "opcion",
         "opciones",
+        "presentarme",
         "proceso",
         "procesos",
+        "renovarlo",
         "tramite",
         "tramites",
+        "ubicado",
+        "ubicada",
     }
 
     if (
