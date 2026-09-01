@@ -365,6 +365,19 @@ matriz_palabras = vectorizador_palabras.fit_transform(
     preguntas_conocidas
 )
 
+# Los n-gramas de caracteres permiten reconocer palabras aunque
+# contengan sustituciones, omisiones o letras intercambiadas.
+vectorizador_caracteres = TfidfVectorizer(
+    analyzer="char_wb",
+    strip_accents="unicode",
+    ngram_range=(3, 5),
+    sublinear_tf=True,
+)
+
+matriz_caracteres = vectorizador_caracteres.fit_transform(
+    preguntas_conocidas
+)
+
 VOCABULARIO_CONOCIDO = set(
     vectorizador_palabras.get_feature_names_out()
 )
@@ -408,9 +421,30 @@ CORRECCIONES_DIRECTAS = {
     "evaluasion": "evaluacion",
     "evaluasiones": "evaluaciones",
     "kuando": "cuando",
+    "akademiko": "academico",
+    "asta": "hasta",
+    "benden": "venden",
+    "beo": "veo",
+    "komida": "comida",
+    "komunicado": "comunicado",
+    "komunicados": "comunicados",
+    "konbocatoria": "convocatoria",
+    "kiero": "quiero",
     "nuebo": "nuevo",
+    "onde": "donde",
+    "ora": "hora",
     "procsima": "proxima",
     "procsimo": "proximo",
+    "reientes": "recientes",
+    "rejistro": "registro",
+    "renobar": "renovar",
+    "rezultado": "resultado",
+    "saver": "saber",
+    "veka": "beca",
+    "vekas": "becas",
+    "veca": "beca",
+    "vecas": "becas",
+    "titulasion": "titulacion",
 }
 
 def corregir_ortografia(texto):
@@ -518,6 +552,8 @@ def identificar_categoria_prioritaria(texto):
         "inscripcion": {
             "inscripcion",
             "inscripciones",
+            "inscrito",
+            "inscrita",
             "inscribirme",
             "reinscripcion",
             "reinscribirme",
@@ -547,11 +583,14 @@ def identificar_categoria_prioritaria(texto):
             "comunicados",
             "anuncio",
             "anuncios",
+            "notificacion",
+            "notificaciones",
         },
         "biblioteca": {
             "biblioteca",
             "libro",
             "libros",
+            "lectura",
             "prestamo",
         },
         "beca": {
@@ -593,27 +632,48 @@ def identificar_categoria_prioritaria(texto):
                 "puedes hacer",
                 "eres capaz",
                 "ayuda universitaria",
+                "brindas orientacion",
+                "informacion universitaria manejas",
                 "servicios puedes consultar",
             ),
         ),
-        ("aviso", ("informacion nueva",)),
+        (
+            "aviso",
+            (
+                "informacion nueva",
+                "mensaje importante",
+                "novedades oficiales",
+            ),
+        ),
         (
             "inscripcion",
             (
                 "confirmar mi carga",
+                "formalizo mi registro",
                 "registrar el semestre",
                 "registrar mis materias",
                 "registro semestral",
+                "renovar mi carga",
                 "renovar mi inscripcion",
             ),
         ),
-        ("biblioteca", ("material de consulta", "reglas de prestamo")),
+        (
+            "biblioteca",
+            (
+                "material de consulta",
+                "material de lectura",
+                "lugar silencioso",
+                "prestamo bibliografico",
+                "reglas de prestamo",
+            ),
+        ),
         (
             "beca",
             (
                 "ayuda financiera",
                 "apoyo economico",
                 "apoyo escolar",
+                "beneficiado con el apoyo",
                 "convocatoria de beca",
                 "convocatoria de becas",
             ),
@@ -624,6 +684,9 @@ def identificar_categoria_prioritaria(texto):
                 "para aprender",
                 "para comprender",
                 "para entender",
+                "dame un ejemplo",
+                "funcionamiento de una red",
+                "un ejemplo de",
             ),
         ),
         (
@@ -635,13 +698,65 @@ def identificar_categoria_prioritaria(texto):
                 "reservo una practica",
             ),
         ),
-        ("materia", ("carga academica",)),
+        (
+            "titulacion",
+            (
+                "modalidad con la que terminare la carrera",
+                "procedimiento para obtener mi grado",
+                "via puedo escoger para conseguir el titulo",
+            ),
+        ),
+        (
+            "materia",
+            (
+                "carga academica",
+                "carga escolar",
+                "unidades de aprendizaje",
+            ),
+        ),
     )
 
     for categoria, frases in frases_prioritarias:
         if any(
             frase in texto_normalizado
             for frase in frases
+        ):
+            return categoria
+
+    # Las raíces permiten reconocer conjugaciones y variantes como
+    # “impartir”, “acredité”, “inscrito” o “beneficiado”.
+    raices_prioritarias = (
+        ("profesor", ("impart", "docent", "maestr", "profesor")),
+        ("titulacion", ("titul", "grado")),
+        (
+            "calificacion",
+            (
+                "acredit",
+                "bolet",
+                "calific",
+                "desempen",
+                "nota",
+                "promed",
+                "reprob",
+            ),
+        ),
+        ("examen", ("exam", "evalu", "parcial")),
+        ("inscripcion", ("inscri", "reinscri")),
+        ("aviso", ("anunci", "avis", "comunic", "notific")),
+        ("biblioteca", ("bibliotec", "lectur", "prestam")),
+        ("beca", ("bec", "benefici", "financ")),
+        ("laboratorio", ("laborator",)),
+        ("cafeteria", ("aliment", "almuerz", "bebid", "cafeter", "comedor")),
+        ("horario", ("clase", "horar", "salon")),
+        ("materia", ("asignatur", "materi")),
+        ("academica", ("algorit", "ejerc", "neuronal", "pseudocod")),
+    )
+
+    for categoria, raices in raices_prioritarias:
+        if any(
+            palabra.startswith(raiz)
+            for palabra in palabras
+            for raiz in raices
         ):
             return categoria
 
@@ -670,20 +785,93 @@ def identificar_categoria_prioritaria(texto):
     return None
 
 def calcular_similitud_clasificacion(texto):
-    vector_pregunta = vectorizador_palabras.transform(
+    vector_palabras = vectorizador_palabras.transform(
         [texto]
     )
 
-    similitudes = cosine_similarity(
-        vector_pregunta,
+    similitudes_palabras = cosine_similarity(
+        vector_palabras,
         matriz_palabras,
     )[0]
+
+    vector_caracteres = vectorizador_caracteres.transform(
+        [texto]
+    )
+
+    similitudes_caracteres = cosine_similarity(
+        vector_caracteres,
+        matriz_caracteres,
+    )[0]
+
+    # Las palabras conservan el mayor peso semántico y los
+    # caracteres aportan tolerancia ante errores ortográficos.
+    similitudes = (
+        0.65 * similitudes_palabras
+        + 0.35 * similitudes_caracteres
+    )
 
     indice = int(similitudes.argmax())
     confianza = float(similitudes[indice])
     confianza = max(0.0, min(1.0, confianza))
 
     return similitudes, indice, confianza
+
+def obtener_respuesta_aclaracion(texto):
+    texto_normalizado = normalizar_texto(texto)
+
+    palabras = set(
+        re.findall(
+            r"\b\w+\b",
+            texto_normalizado,
+        )
+    )
+
+    palabras_registro = {
+        "registrar",
+        "registrarme",
+        "registrarse",
+        "registro",
+    }
+
+    contexto_registro = {
+        "actividad",
+        "actividades",
+        "beca",
+        "becas",
+        "biblioteca",
+        "carrera",
+        "grado",
+        "inscripcion",
+        "inscripciones",
+        "laboratorio",
+        "laboratorios",
+        "materia",
+        "materias",
+        "modalidad",
+        "modalidades",
+        "periodo",
+        "reinscripcion",
+        "reinscripciones",
+        "semestre",
+        "semestral",
+        "taller",
+        "talleres",
+        "titularme",
+        "titulacion",
+        "titulo",
+    }
+
+    if (
+        palabras & palabras_registro
+        and not palabras & contexto_registro
+    ):
+        return (
+            "Necesito un poco más de información. "
+            "¿Te refieres a realizar tu inscripción escolar, "
+            "registrarte en una beca, taller o algún otro servicio?"
+        )
+
+    return None
 
 def es_consulta_ambigua_o_fuera(texto):
     texto_normalizado = normalizar_texto(texto)
@@ -698,15 +886,21 @@ def es_consulta_ambigua_o_fuera(texto):
     # Temas que EduIA todavía no atiende.
     palabras_fuera_alcance = {
         "aeropuerto",
+        "banco",
+        "bitcoin",
         "cancion",
         "canciones",
         "clima",
         "cocinar",
         "doctor",
         "doctora",
+        "dentista",
+        "eleccion",
+        "elecciones",
         "futbol",
         "gripe",
         "hospital",
+        "horoscopo",
         "medico",
         "medica",
         "musica",
@@ -714,6 +908,12 @@ def es_consulta_ambigua_o_fuera(texto):
         "noticias",
         "oferta",
         "ofertas",
+        "taxi",
+        "trafico",
+        "videojuego",
+        "videojuegos",
+        "vuelo",
+        "vuelos",
         "partido",
         "pelicula",
         "politica",
@@ -726,6 +926,7 @@ def es_consulta_ambigua_o_fuera(texto):
         "ruta",
         "wifi",
         "contrasena",
+        "llover",
     }
 
     if palabras & palabras_fuera_alcance:
@@ -792,6 +993,7 @@ def es_consulta_ambigua_o_fuera(texto):
         "docentes",
         "evaluacion",
         "evaluaciones",
+        "ejemplo",
         "examen",
         "examenes",
         "grado",
@@ -799,6 +1001,8 @@ def es_consulta_ambigua_o_fuera(texto):
         "inscripcion",
         "inscripciones",
         "inscribirme",
+        "inscrito",
+        "inscrita",
         "laboratorio",
         "laboratorios",
         "libro",
@@ -814,6 +1018,7 @@ def es_consulta_ambigua_o_fuera(texto):
         "notas",
         "parcial",
         "parciales",
+        "planificacion",
         "prestamo",
         "profesor",
         "profesores",
@@ -822,6 +1027,7 @@ def es_consulta_ambigua_o_fuera(texto):
         "reinscribirme",
         "reinscrito",
         "reinscrita",
+        "registrarme",
         "salon",
         "tesis",
         "titulacion",
@@ -829,9 +1035,16 @@ def es_consulta_ambigua_o_fuera(texto):
         "titulo",
     }
 
+    # La mención de una materia concreta también proporciona contexto,
+    # aunque sus palabras no aparezcan en el conjunto anterior.
+    texto_sin_materias = eliminar_nombres_materias(
+        texto_normalizado
+    )
+    tiene_materia = texto_sin_materias != texto_normalizado
+
     tiene_contexto = bool(
         palabras & contexto_universitario
-    )
+    ) or tiene_materia
 
     # Pronombres y referencias como “lo” o “alguno” necesitan
     # información previa que EduIA no debe inventar.
@@ -863,12 +1076,19 @@ def es_consulta_ambigua_o_fuera(texto):
         "disponibles",
         "escoger",
         "elegir",
+        "fecha",
+        "hacerlo",
+        "limite",
         "opcion",
         "opciones",
         "presentarme",
+        "pregunto",
         "proceso",
         "procesos",
         "renovarlo",
+        "realiza",
+        "resultado",
+        "completar",
         "tramite",
         "tramites",
         "ubicado",
@@ -936,8 +1156,12 @@ def es_consulta_ambigua_o_fuera(texto):
         "cafeteria",
         "cafeteira",
         "biblioteca",
+        "inscripcion",
+        "inscripciones",
         "laboratorio",
         "laboratorios",
+        "reinscripcion",
+        "reinscripciones",
     }
 
     if (
@@ -1036,9 +1260,22 @@ def buscar_respuesta(pregunta_usuario):
         pregunta_usuario
     )
 
+    respuesta_aclaracion = obtener_respuesta_aclaracion(
+        pregunta_corregida
+    )
+
+    if respuesta_aclaracion is not None:
+        return (
+            respuesta_aclaracion,
+            TIPOS_CATEGORIA["desconocida"],
+            "desconocida",
+            0.0,
+        )
+
     if es_consulta_ambigua_o_fuera(
         pregunta_corregida
     ):
+
         categoria = "desconocida"
         confianza = 0.0
 
