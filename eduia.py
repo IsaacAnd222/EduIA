@@ -388,6 +388,10 @@ PALABRAS_CLAVE_CORREGIBLES = {
     "inscripciones",
     "profesor",
     "profesores",
+    "maestro",
+    "maestros",
+    "docente",
+    "docentes",
     "examen",
     "examenes",
     "materia",
@@ -448,42 +452,186 @@ def identificar_categoria_prioritaria(texto):
         )
     )
 
-    palabras_profesor = {
+    indicadores = {
+        "capacidades": {
+            "capaz",
+            "capacidades",
+            "funcion",
+            "funciones",
+        },
+        "profesor": {
+            "profesor",
+            "profesores",
+            "maestro",
+            "maestros",
+            "docente",
+            "docentes",
+            "correo",
+            "contacto",
+            "imparte",
+            "ensena",
+        },
+        "calificacion": {
+            "calificacion",
+            "calificaciones",
+            "nota",
+            "notas",
+            "promedio",
+            "boleta",
+            "resultado",
+            "resultados",
+            "aprobar",
+            "aprobe",
+            "pase",
+            "reprobar",
+            "reprobada",
+            "reprobadas",
+        },
+        "examen": {
+            "examen",
+            "examenes",
+            "evaluacion",
+            "evaluaciones",
+            "parcial",
+            "parciales",
+            "presentare",
+        },
+        "inscripcion": {
+            "inscripcion",
+            "inscripciones",
+            "inscribirme",
+            "reinscripcion",
+            "reinscribirme",
+            "reinscribo",
+        },
+        "horario": {
+            "horario",
+            "horarios",
+            "hora",
+            "salon",
+            "clase",
+            "clases",
+            "momento",
+        },
+        "materia": {
+            "materia",
+            "materias",
+            "asignatura",
+            "asignaturas",
+        },
+        "aviso": {
+            "aviso",
+            "avisos",
+            "comunicado",
+            "comunicados",
+            "anuncio",
+            "anuncios",
+        },
+        "biblioteca": {
+            "biblioteca",
+            "libro",
+            "libros",
+            "prestamo",
+        },
+        "beca": {
+            "beca",
+            "becas",
+            "financiera",
+            "economico",
+        },
+        "titulacion": {
+            "titulacion",
+            "titulo",
+            "titularme",
+            "grado",
+            "tesis",
+        },
+        "laboratorio": {
+            "laboratorio",
+            "laboratorios",
+        },
+        "cafeteria": {
+            "cafeteria",
+            "cafeteira",
+            "menu",
+            "comida",
+            "alimentos",
+        },
+    }
+
+    # Algunas intenciones se expresan mejor mediante frases.
+    frases_prioritarias = (
+        ("profesor", ("a cargo",)),
+        ("capacidades", ("puedes hacer", "eres capaz")),
+        ("aviso", ("informacion nueva",)),
+        (
+            "inscripcion",
+            (
+                "registrar el semestre",
+                "registrar mis materias",
+                "renovar mi inscripcion",
+            ),
+        ),
+        ("biblioteca", ("material de consulta", "reglas de prestamo")),
+        (
+            "beca",
+            (
+                "ayuda financiera",
+                "apoyo economico",
+                "apoyo escolar",
+                "convocatoria de beca",
+                "convocatoria de becas",
+            ),
+        ),
+        ("laboratorio", ("agendar una practica", "reservar una practica")),
+    )
+
+    for categoria, frases in frases_prioritarias:
+        if any(
+            frase in texto_normalizado
+            for frase in frases
+        ):
+            return categoria
+
+    # El orden evita que "evaluación de una materia" se confunda
+    # con horario o que "registrar materias" se confunda con materia.
+    orden_prioridad = (
+        "capacidades",
         "profesor",
-        "profesores",
-        "maestro",
-        "maestros",
-        "docente",
-        "docentes",
-        "correo",
-        "contacto",
-        "imparte",
-        "ensena",
-    }
-
-    palabras_horario = {
+        "calificacion",
+        "examen",
+        "inscripcion",
+        "aviso",
+        "biblioteca",
+        "beca",
+        "titulacion",
+        "laboratorio",
+        "cafeteria",
         "horario",
-        "hora",
-        "salon",
-        "dia",
-        "cuando",
-    }
-
-    tiene_indicador_profesor = bool(
-        palabras & palabras_profesor
+        "materia",
     )
 
-    tiene_indicador_horario = bool(
-        palabras & palabras_horario
-    )
-
-    if (
-        tiene_indicador_profesor
-        and not tiene_indicador_horario
-    ):
-        return "profesor"
+    for categoria in orden_prioridad:
+        if palabras & indicadores[categoria]:
+            return categoria
 
     return None
+
+def calcular_similitud_clasificacion(texto):
+    vector_pregunta = vectorizador_palabras.transform(
+        [texto]
+    )
+
+    similitudes = cosine_similarity(
+        vector_pregunta,
+        matriz_palabras,
+    )[0]
+
+    indice = int(similitudes.argmax())
+    confianza = float(similitudes[indice])
+    confianza = max(0.0, min(1.0, confianza))
+
+    return similitudes, indice, confianza
 
 def es_consulta_ambigua_o_fuera(texto):
     texto_normalizado = normalizar_texto(texto)
@@ -588,6 +736,64 @@ def es_consulta_ambigua_o_fuera(texto):
 
     return False
 
+def eliminar_nombres_materias(texto):
+    texto_sin_materias = normalizar_texto(texto)
+
+    materias = obtener_todas_las_materias()
+    variantes = set()
+
+    for materia in materias:
+        nombre = normalizar_texto(
+            materia["nombre"]
+        )
+
+        variantes.add(nombre)
+
+        # Reconocer II, 2 y “dos” como equivalentes.
+        if nombre.endswith(" ii"):
+            nombre_base = nombre[:-3]
+
+            variantes.add(f"{nombre_base} 2")
+            variantes.add(f"{nombre_base} dos")
+
+        # Reconocer I, 1 y “uno” como equivalentes.
+        elif nombre.endswith(" i"):
+            nombre_base = nombre[:-2]
+
+            variantes.add(f"{nombre_base} 1")
+            variantes.add(f"{nombre_base} uno")
+
+    # Abreviaciones comunes de materias.
+    variantes.update(
+        {
+            "ia",
+            "redes ii",
+            "redes 2",
+            "redes dos",
+        }
+    )
+
+    for variante in sorted(
+        variantes,
+        key=len,
+        reverse=True,
+    ):
+        patron = rf"\b{re.escape(variante)}\b"
+
+        texto_sin_materias = re.sub(
+            patron,
+            " ",
+            texto_sin_materias,
+        )
+
+    texto_sin_materias = re.sub(
+        r"\s+",
+        " ",
+        texto_sin_materias,
+    )
+
+    return texto_sin_materias.strip()
+
 def buscar_respuesta(pregunta_usuario):
     pregunta_corregida = corregir_ortografia(
         pregunta_usuario
@@ -606,62 +812,77 @@ def buscar_respuesta(pregunta_usuario):
             confianza,
         )
 
-    vector_pregunta_palabras = (
-        vectorizador_palabras.transform(
-            [pregunta_corregida]
+    pregunta_sin_materia = eliminar_nombres_materias(
+        pregunta_corregida
+    )
+
+    (
+        similitudes_originales,
+        indice_original,
+        confianza_original,
+    ) = calcular_similitud_clasificacion(
+        pregunta_corregida
+    )
+
+    (
+        similitudes_sin_materia,
+        indice_sin_materia,
+        confianza_sin_materia,
+    ) = calcular_similitud_clasificacion(
+        pregunta_sin_materia
+    )
+
+    categoria_prioritaria = identificar_categoria_prioritaria(
+        pregunta_usuario
+    )
+
+    if categoria_prioritaria is None:
+        categoria_prioritaria = identificar_categoria_prioritaria(
+            pregunta_corregida
         )
-    )
-
-    similitudes = cosine_similarity(
-        vector_pregunta_palabras,
-        matriz_palabras,
-    )[0]
-
-    indice_mejor_resultado = similitudes.argmax()
-    confianza = float(
-        similitudes[indice_mejor_resultado]
-    )
-    confianza = max(
-        0.0,
-        min(1.0, confianza),
-    )
-
-    categoria_prioritaria = (
-        identificar_categoria_prioritaria(
-            pregunta_usuario
-        )
-    )
 
     if categoria_prioritaria is not None:
         categoria = categoria_prioritaria
 
-        similitudes_categoria = [
-            similitud
-            for similitud, categoria_ejemplo
-            in zip(
-                similitudes,
-                categorias_conocidas,
-            )
+        indices_categoria = [
+            indice
+            for indice, categoria_ejemplo
+            in enumerate(categorias_conocidas)
             if categoria_ejemplo == categoria
         ]
 
         confianza = max(
-            similitudes_categoria,
-            default=confianza,
+            (
+                max(
+                    similitudes_originales[indice],
+                    similitudes_sin_materia[indice],
+                )
+                for indice in indices_categoria
+            ),
+            default=0.0,
         )
 
-        confianza = max(
-            0.0,
-            min(1.0, float(confianza)),
-        )
-
-    elif confianza < UMBRAL_CONFIANZA:
-        categoria = "desconocida"
+        # Una regla explícita aporta confianza semántica,
+        # aunque la semejanza textual sea pequeña.
+        confianza = max(0.60, float(confianza))
 
     else:
-        categoria = categorias_conocidas[
-            indice_mejor_resultado
-        ]
+        if confianza_original >= confianza_sin_materia:
+            indice_mejor_resultado = indice_original
+            confianza = confianza_original
+        else:
+            indice_mejor_resultado = indice_sin_materia
+            confianza = confianza_sin_materia
+
+        if confianza < UMBRAL_CONFIANZA:
+            categoria = "desconocida"
+        else:
+            categoria = categorias_conocidas[
+                indice_mejor_resultado
+            ]
+
+    confianza = max(0.0, min(1.0, confianza))
+
     tipo = TIPOS_CATEGORIA[categoria]
     respuesta = RESPUESTAS_CATEGORIA[categoria]
 

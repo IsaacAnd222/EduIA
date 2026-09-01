@@ -144,20 +144,20 @@ PROFESORES_INICIALES = [
     ),
     (
         "P003",
-        "Claudia Ramírez Soto",
-        "claudia.ramirez@eduia.edu.mx",
+        "Elsa Villagrán Escamilla",
+        "elsa.villagran@eduia.edu.mx",
         "Matemáticas",
     ),
     (
         "P004",
-        "Fernando Torres Méndez",
-        "fernando.torres@eduia.edu.mx",
+        "Guillermo Tinoco Cota",
+        "guillermo.tinoco@eduia.edu.mx",
         "Electrónica",
     ),
     (
         "P005",
-        "Patricia Gómez Lara",
-        "patricia.gomez@eduia.edu.mx",
+        "Irma Hernández Martínez",
+        "irma.hernandez@eduia.edu.mx",
         "Comunicación y Humanidades",
     ),
     (
@@ -174,26 +174,26 @@ PROFESORES_INICIALES = [
     ),
     (
         "P008",
-        "Miguel Ángel Navarro Cruz",
-        "miguel.navarro@eduia.edu.mx",
+        "Armando Israel Bustos Valdespino",
+        "armando.bustos@eduia.edu.mx",
         "Redes de Computadoras",
     ),
     (
         "P009",
-        "Gabriela Mendoza Reyes",
-        "gabriela.mendoza@eduia.edu.mx",
+        "Erick Ángel Arriaga Hurtado",
+        "erick.arriaga@eduia.edu.mx",
         "Sistemas Embebidos",
     ),
     (
         "P010",
-        "Ricardo Salazar Campos",
-        "ricardo.salazar@eduia.edu.mx",
+        "Eréndira González Tinoco",
+        "erendira.gonzalez@eduia.edu.mx",
         "Inteligencia Artificial",
     ),
     (
         "P011",
-        "Daniela Pérez Fuentes",
-        "daniela.perez@eduia.edu.mx",
+        "José Juan Hernández Hernández",
+        "jose.hernandez@eduia.edu.mx",
         "Administración e Investigación",
     ),
     (
@@ -219,8 +219,8 @@ ASIGNACIONES_INICIALES = [
     ("Diseño de Bases de Datos", "P007"),
     ("Sistemas Digitales I", "P002"),
     ("Electricidad y Magnetismo", "P004"),
-    ("Cálculo Diferencial e Integral", "P003"),
-    ("Comunicación Organizacional", "P005"),
+    ("Cálculo Diferencial e Integral", "P004"),
+    ("Comunicación Organizacional", "P011"),
     ("Inglés III", "P006"),
 
     # Quinto semestre
@@ -237,8 +237,8 @@ ASIGNACIONES_INICIALES = [
     ("Redes de Computadoras II", "P008"),
     ("Sistemas Embebidos", "P009"),
     ("Inteligencia Artificial", "P010"),
-    ("Investigación de Operaciones", "P010"),
-    ("Seminario de Titulación", "P011"),
+    ("Investigación de Operaciones", "P003"),
+    ("Seminario de Titulación", "P005"),
 ]
 
 BLOQUES_MATUTINOS = [
