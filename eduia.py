@@ -184,6 +184,15 @@ datos_entrenamiento = [
     ("dónde pregunto por las vecas", "beca"),
     ("hay ayuda económica para pagar mis estudios", "beca"),
     ("puedo recibir apoyo para estudiar", "beca"),
+    ("qué tipos de becas y apoyos financieros existen", "beca"),
+    ("cuáles son los requisitos de la beca académica", "beca"),
+    ("cómo solicito una beca deportiva", "beca"),
+    ("qué necesito para una beca cultural", "beca"),
+    ("cómo funciona el apoyo financiero familiar", "beca"),
+    ("qué es el apoyo financiero de convenio", "beca"),
+    ("cómo conservo o renuevo mi beca", "beca"),
+    ("qué condiciones debo cumplir para mantener el apoyo", "beca"),
+    ("dónde consulto los resultados de becas", "beca"),
 
     # Titulación
     ("cómo puedo titularme", "titulacion"),
@@ -488,6 +497,331 @@ def construir_respuesta_inscripcion(pregunta):
         "el inicio de clases."
     )
 
+
+def construir_respuesta_beca(pregunta):
+    """Construye una respuesta específica sobre becas y apoyos."""
+    texto = normalizar_texto(pregunta)
+
+    if any(
+        frase in texto
+        for frase in (
+            "que es una beca",
+            "que son las becas",
+            "que es un apoyo financiero",
+            "que son los apoyos financieros",
+            "diferencia entre beca",
+        )
+    ):
+        return (
+            "En el Instituto Irapuato, una beca y un apoyo financiero "
+            "consisten en la exención de un porcentaje de las cuotas "
+            "escolares para alumnos activos. El porcentaje lo determina "
+            "el Comité de Becas y Apoyos Financieros conforme a la "
+            "convocatoria y al reglamento.\n"
+            "Quienes reciben determinados apoyos financieros pueden "
+            "tener que prestar servicio institucional en áreas académicas, "
+            "administrativas, culturales o deportivas."
+        )
+
+    if any(
+        palabra in texto
+        for palabra in (
+            "contacto",
+            "responsable",
+            "correo",
+            "telefono",
+            "whatsapp",
+            "donde pregunto",
+            "donde solicito",
+            "a quien",
+            "con quien",
+        )
+    ):
+        return (
+            "El Departamento de Vinculación y Apoyos Financieros "
+            "orienta y da seguimiento a las solicitudes.\n"
+            "- Felipe Santellano, auxiliar administrativo: "
+            "(462) 623 5969 ext. 232, WhatsApp (462) 188 5024, "
+            "felipesantellano@vinculacion.uii.edu.mx.\n"
+            "- Vanessa Ruiz, directora del departamento: "
+            "(462) 623 5969 ext. 237, "
+            "vanessaruiz@vinculacion.uii.edu.mx."
+        )
+
+    if any(
+        frase in texto
+        for frase in (
+            "que becas",
+            "cuales becas",
+            "tipos de beca",
+            "tipos de apoyo",
+            "becas disponibles",
+            "apoyos disponibles",
+            "que apoyos",
+        )
+    ) and "nuevo ingreso" not in texto:
+        return (
+            "El Instituto Irapuato contempla estas becas y apoyos:\n"
+            "- Apoyos para nuevo ingreso.\n"
+            "- Apoyo financiero de convenio.\n"
+            "- Apoyo financiero familiar.\n"
+            "- Beca académica.\n"
+            "- Beca deportiva.\n"
+            "- Beca cultural.\n"
+            "Los beneficios no son acumulables y el porcentaje final "
+            "depende de la convocatoria y del Comité de Becas y "
+            "Apoyos Financieros."
+        )
+
+    if "convenio" in texto:
+        return (
+            "El apoyo financiero de convenio está dirigido al personal "
+            "y a familiares directos de empresas o instituciones que "
+            "mantengan un convenio vigente con el Instituto Irapuato.\n"
+            "Para nuevo ingreso en julio-diciembre de 2026, el registro "
+            "fue del 1 de junio al 11 de julio de 2026 y se solicitó "
+            "promedio mínimo de 8.0. El primer pago se cubre al 100 %.\n"
+            "Para conservarlo se requiere promedio de 8.5, no reprobar "
+            "materias y mantener continuidad escolar. El porcentaje "
+            "depende del convenio y no es acumulable con otro beneficio."
+        )
+
+    if "familiar" in texto or "familia" in texto:
+        return (
+            "El apoyo financiero familiar beneficia a familiares directos "
+            "cuando ya existe un alumno activo en el Instituto Irapuato.\n"
+            "Otorga 25 % al segundo integrante inscrito y puede aplicarse "
+            "hasta a dos familiares beneficiarios. El alumno previamente "
+            "inscrito no recibe este beneficio.\n"
+            "Para julio-diciembre de 2026, las solicitudes se recibieron "
+            "del 1 de junio al 11 de julio. El primer pago se cubre al "
+            "100 % y el beneficio depende de que el familiar de referencia "
+            "continúe activo. No es acumulable con otros apoyos."
+        )
+
+    if "cultural" in texto or "artist" in texto or "talento" in texto:
+        return (
+            "La beca cultural para alumnos activos reconoce habilidades "
+            "artísticas o culturales. Para la convocatoria "
+            "julio-diciembre de 2026 se solicitó:\n"
+            "- Promedio mínimo de 8.5 y no tener adeudos.\n"
+            "- Solicitud en línea del 8 al 13 de junio de 2026.\n"
+            "- Justificación, comprobantes de domicilio e ingresos, INE "
+            "del responsable, fotografía personal y fotos del domicilio.\n"
+            "- Video corto demostrando el talento, enviado a "
+            "becasalumno@vinculacion.uii.edu.mx.\n"
+            "También se indicó registrarse en un taller cultural del 3 al "
+            "7 de agosto. La renovación exige promedio mínimo de 8 y no "
+            "reprobar materias."
+        )
+
+    if "deport" in texto or any(
+        deporte in texto
+        for deporte in (
+            "futbol",
+            "basquetbol",
+            "voleibol",
+            "taekwondo",
+            "porra",
+        )
+    ):
+        return (
+            "La beca deportiva para alumnos activos apoya a quienes "
+            "representan al Instituto Irapuato. Para la convocatoria "
+            "julio-diciembre de 2026 se solicitó promedio mínimo de 8.5, "
+            "no tener adeudos y enviar la solicitud del 8 al 13 de junio.\n"
+            "Las disciplinas admitidas fueron futbol, basquetbol, voleibol, "
+            "taekwondo y porra. Las pruebas físicas se programaron para el "
+            "16 de junio de 2026 a las 14:00 horas.\n"
+            "La renovación exige promedio mínimo de 8 y no reprobar "
+            "materias. Los resultados se programaron del 3 al 31 de "
+            "agosto de 2026."
+        )
+
+    if "academica" in texto or "socioeconomico" in texto:
+        return (
+            "La beca académica para alumnos activos se solicita después "
+            "de concluir el ciclo escolar. Para julio-diciembre de 2026 "
+            "se requirió:\n"
+            "- Promedio general mínimo de 8.5, sin materias reprobadas "
+            "ni adeudos de colegiatura.\n"
+            "- Solicitud en línea del 8 al 13 de junio de 2026.\n"
+            "- Justificación, comprobante del estudio socioeconómico, "
+            "comprobantes de domicilio e ingresos, INE del responsable, "
+            "fotografía personal y fotos del domicilio.\n"
+            "El estudio socioeconómico costó $250 y se pagó del 1 al 6 "
+            "de junio. Los resultados se programaron del 1 al 31 de agosto."
+        )
+
+    es_egresado_uii = (
+        "egresado" in texto
+        or "prepa uii" in texto
+        or "preparatoria uii" in texto
+        or "30" in texto
+    )
+
+    if es_egresado_uii:
+        return (
+            "El apoyo de 30 % para egresados de preparatorias UII "
+            "matutina y vespertina tuvo un límite de 20 beneficios para "
+            "el ingreso julio-diciembre de 2026.\n"
+            "El registro fue del 1 de junio al 11 de julio. Se debía "
+            "completar el proceso de admisión y cubrir el primer pago al "
+            "100 %. El retroactivo se aplicaría en el segundo pago.\n"
+            "Para conservarlo durante la carrera se requiere promedio "
+            "mínimo de 8.5, no reprobar y mantener ocho semestres "
+            "continuos. No es acumulable."
+        )
+
+    es_apoyo_20 = (
+        "20" in texto
+        or "apoyo de nuevo ingreso" in texto
+        or "apoyo nuevo ingreso" in texto
+    )
+
+    if es_apoyo_20:
+        return (
+            "El apoyo financiero de 20 % para nuevo ingreso contempló "
+            "20 beneficios para licenciaturas escolarizadas en el periodo "
+            "julio-diciembre de 2026.\n"
+            "Se solicitó promedio mínimo de 8.5, completar la admisión, "
+            "cubrir el primer pago al 100 % y enviar la solicitud del 1 de "
+            "junio al 11 de julio de 2026. La comprobación del promedio "
+            "debía entregarse antes del 3 de agosto.\n"
+            "La renovación es automática con promedio de 8.5 y sin "
+            "materias reprobadas. No es acumulable."
+        )
+
+    if "nuevo ingreso" in texto or "aspirante" in texto:
+        return (
+            "Para nuevo ingreso se contemplaron los apoyos de convenio, "
+            "familiar, 20 % para nuevo ingreso y 30 % para egresados de "
+            "preparatorias UII. Solo puede elegirse un beneficio.\n"
+            "El aspirante debe solicitar ficha, aprobar el examen, realizar "
+            "el primer pago al 100 % y entregar sus documentos antes de "
+            "enviar la solicitud en línea. Para julio-diciembre de 2026, "
+            "los registros fueron del 1 de junio al 11 de julio.\n"
+            "Indica cuál apoyo deseas consultar para mostrarte sus "
+            "requisitos particulares."
+        )
+
+    if any(
+        palabra in texto
+        for palabra in (
+            "conservar",
+            "conservo",
+            "continuar",
+            "mantener",
+            "mantengo",
+            "renovar",
+            "renovacion",
+            "renueva",
+            "renuevo",
+            "perder",
+            "pierdo",
+        )
+    ):
+        return (
+            "Las condiciones de renovación dependen del beneficio:\n"
+            "- Beca académica y apoyos de convenio o nuevo ingreso: "
+            "promedio mínimo de 8.5.\n"
+            "- Becas cultural y deportiva: promedio mínimo de 8.0.\n"
+            "- No debes reprobar materias; una materia reprobada puede "
+            "ocasionar la pérdida del beneficio.\n"
+            "- El apoyo familiar continúa mientras el familiar de referencia "
+            "permanezca activo.\n"
+            "La renovación suele ser automática, pero debe verificarse con "
+            "Vinculación y Apoyos Financieros."
+        )
+
+    if "resultado" in texto or "inconformidad" in texto or "queja" in texto:
+        return (
+            "Los resultados de las becas académica y cultural de 2026 se "
+            "programaron del 1 al 31 de agosto; los de la beca deportiva, "
+            "del 3 al 31 de agosto. El Comité de Becas determina el "
+            "porcentaje otorgado.\n"
+            "Para presentar una inconformidad escribe a "
+            "becasalumno@vinculacion.uii.edu.mx e incluye nombre, carrera, "
+            "semestre, modalidad y motivo. La respuesta estimada es de una "
+            "semana."
+        )
+
+    if any(
+        palabra in texto
+        for palabra in (
+            "documento",
+            "documentos",
+            "papel",
+            "papeles",
+            "requisito",
+            "requisitos",
+        )
+    ):
+        return (
+            "Los documentos cambian según la beca o apoyo financiero. "
+            "¿Deseas consultar los requisitos de la beca académica, "
+            "cultural, deportiva, de convenio, familiar o de nuevo ingreso?"
+        )
+
+    es_pregunta_fecha = any(
+        palabra in texto
+        for palabra in (
+            "cuando",
+            "fecha",
+            "fechas",
+            "periodo",
+            "limite",
+        )
+    )
+
+    if (
+        ("solicit" in texto or "inscrib" in texto)
+        and not es_pregunta_fecha
+    ):
+        return (
+            "Para solicitar una beca o apoyo financiero:\n"
+            "1. Identifica el beneficio que corresponde a tu situación.\n"
+            "2. Revisa promedio, restricciones y documentos de la "
+            "convocatoria.\n"
+            "3. Completa la solicitud en línea y adjunta los comprobantes.\n"
+            "4. Envíala dentro del periodo establecido.\n"
+            "Los aspirantes de nuevo ingreso deben completar la admisión, "
+            "entregar documentos y cubrir el primer pago al 100 %. Los "
+            "alumnos activos deben cumplir los requisitos particulares de "
+            "la beca elegida. Indica cuál te interesa para darte los detalles."
+        )
+
+    if any(
+        palabra in texto
+        for palabra in (
+            "cuando",
+            "fecha",
+            "fechas",
+            "convocatoria",
+            "registro",
+            "solicitar",
+            "solicitud",
+            "inscrib",
+        )
+    ):
+        return (
+            "En la convocatoria julio-diciembre de 2026, los apoyos para "
+            "nuevo ingreso se solicitaron del 1 de junio al 11 de julio. "
+            "Las becas académica, cultural y deportiva para alumnos activos "
+            "se solicitaron del 8 al 13 de junio. Estos periodos ya "
+            "concluyeron.\n"
+            "Consulta la siguiente convocatoria en el sitio del Instituto "
+            "Irapuato o con Vinculación y Apoyos Financieros."
+        )
+
+    return (
+        "Para orientarte correctamente, indica qué deseas consultar: "
+        "tipos de becas, nuevo ingreso, beca académica, deportiva, cultural, "
+        "apoyo de convenio, apoyo familiar, requisitos, fechas, resultados "
+        "o renovación. Los beneficios no son acumulables y el porcentaje "
+        "final lo determina el Comité de Becas y Apoyos Financieros."
+    )
+
 TIPOS_CATEGORIA = {
     "saludo": "general",
     "capacidades": "general",
@@ -657,6 +991,16 @@ def identificar_categoria_prioritaria(texto):
             texto_normalizado,
         )
     )
+
+    # Cuando se menciona explícitamente una beca o un apoyo financiero,
+    # esa intención debe prevalecer sobre términos como inscripción,
+    # registro o nuevo ingreso.
+    if (
+        palabras & {"beca", "becas"}
+        or "apoyo financiero" in texto_normalizado
+        or "apoyos financieros" in texto_normalizado
+    ):
+        return "beca"
 
     indicadores = {
         "capacidades": {
@@ -830,9 +1174,21 @@ def identificar_categoria_prioritaria(texto):
                 "ayuda financiera",
                 "apoyo economico",
                 "apoyo escolar",
+                "apoyo financiero",
+                "apoyos financieros",
                 "beneficiado con el apoyo",
                 "convocatoria de beca",
                 "convocatoria de becas",
+                "beca academica",
+                "beca cultural",
+                "beca deportiva",
+                "apoyo familiar",
+                "apoyo de convenio",
+                "apoyo financiero familiar",
+                "apoyo financiero de convenio",
+                "conservar el apoyo",
+                "mantener el apoyo",
+                "renovar el apoyo",
             ),
         ),
         (
@@ -1439,6 +1795,8 @@ def es_consulta_ambigua_o_fuera(texto):
     }
 
     contexto_apertura = {
+        "beca",
+        "becas",
         "cafeteria",
         "cafeteira",
         "biblioteca",
@@ -1648,6 +2006,11 @@ def buscar_respuesta(pregunta_usuario):
 
     if categoria == "inscripcion":
         respuesta = construir_respuesta_inscripcion(
+            pregunta_corregida
+        )
+
+    elif categoria == "beca":
+        respuesta = construir_respuesta_beca(
             pregunta_corregida
         )
 
