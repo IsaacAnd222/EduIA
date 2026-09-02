@@ -871,6 +871,95 @@ def obtener_respuesta_aclaracion(texto):
             "registrarte en una beca, taller o algún otro servicio?"
         )
 
+    # Una calificación sin materia, examen o periodo puede referirse
+    # a distintos resultados. EduIA debe pedir el dato que falta.
+    frases_calificacion_sin_contexto = {
+        "cuanto saque",
+        "cual es la calificacion",
+        "que calificacion tengo",
+        "cual fue mi resultado",
+    }
+
+    contexto_calificacion = {
+        "asignatura",
+        "asignaturas",
+        "examen",
+        "examenes",
+        "materia",
+        "materias",
+        "parcial",
+        "parciales",
+        "semestre",
+    }
+
+    es_calificacion_sin_contexto = any(
+        frase in texto_normalizado
+        for frase in frases_calificacion_sin_contexto
+    )
+
+    if es_calificacion_sin_contexto:
+        texto_sin_materias = eliminar_nombres_materias(
+            texto_normalizado
+        )
+        tiene_materia = (
+            texto_sin_materias != texto_normalizado
+        )
+
+        if (
+            not palabras & contexto_calificacion
+            and not tiene_materia
+        ):
+            return (
+                "¿De qué materia, examen o periodo quieres "
+                "consultar la calificación?"
+            )
+
+    frases_lugar_sin_contexto = {
+        "donde esta el lugar",
+        "donde se encuentra el lugar",
+        "donde queda el lugar",
+    }
+
+    if any(
+        frase in texto_normalizado
+        for frase in frases_lugar_sin_contexto
+    ):
+        return (
+            "¿Qué lugar o servicio universitario deseas localizar?"
+        )
+
+    palabras_profesor = {
+        "docente",
+        "docentes",
+        "maestro",
+        "maestros",
+        "profesor",
+        "profesores",
+    }
+
+    palabras_opinion = {
+        "agradable",
+        "agradables",
+        "buena",
+        "bueno",
+        "mal",
+        "mala",
+        "malo",
+        "mejor",
+        "onda",
+        "peor",
+    }
+
+    if (
+        palabras & palabras_profesor
+        and palabras & palabras_opinion
+    ):
+        return (
+            "No puedo emitir opiniones personales sobre tus profesores. "
+            "Puedo indicarte quién imparte cada materia y mostrarte "
+            "sus datos académicos. ¿Quieres consultar esa información?"
+        )
+
     return None
 
 def es_consulta_ambigua_o_fuera(texto):
@@ -888,48 +977,82 @@ def es_consulta_ambigua_o_fuera(texto):
         "aeropuerto",
         "banco",
         "bitcoin",
+        "bullying",
         "cancion",
         "canciones",
+        "celular",
+        "chiste",
         "clima",
         "cocinar",
+        "contrasena",
+        "dentista",
         "doctor",
         "doctora",
-        "dentista",
         "eleccion",
         "elecciones",
+        "festeja",
+        "festejo",
         "futbol",
         "gripe",
         "hospital",
         "horoscopo",
-        "medico",
+        "llover",
+        "lonche",
+        "lonches",
         "medica",
+        "medico",
+        "mochila",
+        "mochilas",
         "musica",
         "noticia",
         "noticias",
+        "novia",
+        "novio",
         "oferta",
         "ofertas",
-        "taxi",
-        "trafico",
-        "videojuego",
-        "videojuegos",
-        "vuelo",
-        "vuelos",
         "partido",
+        "pelea",
+        "peleas",
         "pelicula",
+        "plazoleta",
         "politica",
         "politicas",
+        "polinesios",
         "receta",
         "recetas",
-        "salud",
-        "chiste",
-        "transporte",
+        "restaurante",
+        "restaurantes",
         "ruta",
+        "salud",
+        "taxi",
+        "telefono",
+        "trafico",
+        "transporte",
+        "videojuego",
+        "videojuegos",
+        "virus",
+        "vuelo",
+        "vuelos",
         "wifi",
-        "contrasena",
-        "llover",
     }
 
     if palabras & palabras_fuera_alcance:
+        return True
+
+    # Algunas consultas externas se reconocen mejor como frases,
+    # porque sus palabras aisladas también pueden usarse en la escuela.
+    frases_fuera_alcance = {
+        "me siento mal",
+        "sentirme mal",
+        "puerto vallarta",
+        "de que esta hecho el cafe",
+        "como se prepara el cafe",
+    }
+
+    if any(
+        frase in texto_normalizado
+        for frase in frases_fuera_alcance
+    ):
         return True
 
     # Comprar productos externos no forma parte de los servicios
