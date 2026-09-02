@@ -158,6 +158,11 @@ datos_entrenamiento = [
     ("qué documentos piden para la inscripción", "inscripcion"),
     ("quiero registrar mis materias para el próximo periodo","inscripcion"),
     ("cómo me inscribo al siguiente semestre", "inscripcion"),
+    ("cuál es el proceso de nuevo ingreso", "inscripcion"),
+    ("qué documentos necesito para nuevo ingreso", "inscripcion"),
+    ("cuándo inicia el proceso de nuevo ingreso", "inscripcion"),
+    ("dónde solicito mi ficha de ingreso", "inscripcion"),
+    ("cómo ingreso al instituto irapuato", "inscripcion"),
 
     # Biblioteca
     ("dónde está la biblioteca", "biblioteca"),
@@ -334,6 +339,154 @@ RESPUESTAS_CATEGORIA = {
     ),
     "desconocida": RESPUESTA_DESCONOCIDA,
 }
+
+
+def construir_respuesta_inscripcion(pregunta):
+    """Construye una respuesta específica sobre inscripción."""
+    texto = normalizar_texto(pregunta)
+
+    indicadores_reinscripcion = (
+        "reinscri",
+        "siguiente semestre",
+        "proximo semestre",
+        "proximo periodo",
+        "registrar mis materias",
+        "registrar el semestre",
+        "registro semestral",
+        "renovar mi carga",
+        "renovar mi inscripcion",
+        "primera colegiatura",
+    )
+
+    indicadores_nuevo_ingreso = (
+        "nuevo ingreso",
+        "aspirante",
+        "admision",
+        "ficha",
+        "examen de admision",
+        "ficha de ingreso",
+        "solicitar mi ficha",
+        "solicitar una ficha",
+        "ingresar al instituto",
+        "entrar al instituto",
+        "primera vez",
+    )
+
+    es_reinscripcion = any(
+        indicador in texto
+        for indicador in indicadores_reinscripcion
+    )
+    es_nuevo_ingreso = any(
+        indicador in texto
+        for indicador in indicadores_nuevo_ingreso
+    )
+
+    if es_reinscripcion and not es_nuevo_ingreso:
+        return (
+            "Si ya eres estudiante del Instituto Irapuato, para "
+            "reinscribirte solo debes pagar la primera colegiatura "
+            "del nuevo semestre antes de la fecha límite indicada.\n"
+            "Conserva tu comprobante de pago. No necesitas repetir "
+            "el proceso de ficha, examen de admisión ni entrega de "
+            "documentos de nuevo ingreso.\n"
+            "La fecha exacta debe confirmarse en Servicios Escolares, "
+            "ubicado en el edificio central."
+        )
+
+    if not es_nuevo_ingreso:
+        return (
+            "Para darte la información correcta, ¿te refieres al "
+            "proceso de nuevo ingreso al Instituto Irapuato o a la "
+            "reinscripción de un estudiante que ya está matriculado?"
+        )
+
+    palabras_documentos = (
+        "documento",
+        "documentos",
+        "papel",
+        "papeles",
+        "requisito",
+        "requisitos",
+        "necesito",
+    )
+
+    if any(palabra in texto for palabra in palabras_documentos):
+        return (
+            "Para la inscripción de nuevo ingreso necesitas:\n"
+            "- Recibo de pago o ficha de depósito.\n"
+            "- Acta de nacimiento digital con código QR.\n"
+            "- CURP digital vigente.\n"
+            "- INE vigente, por ambos lados, del responsable de los pagos.\n"
+            "- Certificado de preparatoria.\n"
+            "Si el certificado es físico, entrega el original y una "
+            "copia legalizada en Servicios Escolares. Adjunta los PDF "
+            "digitales originales; no fotografías convertidas a PDF."
+        )
+
+    palabras_fechas = (
+        "cuando",
+        "fecha",
+        "fechas",
+        "periodo",
+        "limite",
+    )
+
+    if any(palabra in texto for palabra in palabras_fechas):
+        return (
+            "Calendario de referencia para nuevo ingreso:\n"
+            "- Ciclo 2026: solicitud de ficha desde el 1 de abril y "
+            "entrega de documentos hasta el 5 de agosto de 2026.\n"
+            "- Ciclo 2027: solicitud de ficha desde el 1 de abril y "
+            "entrega de documentos hasta el 5 de agosto de 2027.\n"
+            "Estas fechas son aproximadas para EduIA. Confirma la "
+            "convocatoria vigente con Servicios Escolares."
+        )
+
+    palabras_contacto = (
+        "donde",
+        "ubicacion",
+        "ubicado",
+        "lugar",
+        "horario",
+        "contacto",
+        "correo",
+        "telefono",
+        "whatsapp",
+        "servicios escolares",
+        "edificio central",
+    )
+
+    if any(palabra in texto for palabra in palabras_contacto):
+        return (
+            "Puedes recibir atención en Servicios Escolares, en el "
+            "edificio central del Instituto Irapuato: Prolongación "
+            "Mariano J. García 355, colonia San Miguelito, Irapuato, "
+            "Guanajuato.\n"
+            "Horario: lunes a viernes de 9:00 a. m. a 5:00 p. m. y "
+            "sábados de 9:00 a. m. a 12:00 p. m.\n"
+            "También puedes solicitar la ficha de nuevo ingreso en "
+            "www.uii.edu.mx/ficha.\n"
+            "Contacto general y de nuevo ingreso: "
+            "informes@marketing.uii.edu.mx, conmutador (462) 623 5969, "
+            "WhatsApp 462 188 2396 y 462 188 3869."
+        )
+
+    return (
+        "Proceso de nuevo ingreso al Instituto Irapuato:\n"
+        "1. Solicita tu ficha en las instalaciones o en "
+        "www.uii.edu.mx/ficha.\n"
+        "2. Recíbela por correo, normalmente dentro de 48 horas.\n"
+        "3. Presenta en línea el examen de admisión.\n"
+        "4. Consulta el resultado en www.uii.edu.mx/resultados.\n"
+        "5. Si elegiste modalidad escolarizada, asiste a la entrevista "
+        "indicada por Dirección Académica.\n"
+        "6. Realiza el pago y completa el formulario en "
+        "https://uii.edu.mx/inscripcion.\n"
+        "7. Adjunta tus documentos y espera la confirmación de "
+        "Servicios Escolares.\n"
+        "Después recibirás información sobre el curso de inducción y "
+        "el inicio de clases."
+    )
 
 TIPOS_CATEGORIA = {
     "saludo": "general",
@@ -650,11 +803,15 @@ def identificar_categoria_prioritaria(texto):
             (
                 "confirmar mi carga",
                 "formalizo mi registro",
+                "ingresar al instituto",
+                "nuevo ingreso",
                 "registrar el semestre",
                 "registrar mis materias",
                 "registro semestral",
                 "renovar mi carga",
                 "renovar mi inscripcion",
+                "solicitar mi ficha",
+                "solicitar una ficha",
             ),
         ),
         (
@@ -1126,6 +1283,9 @@ def es_consulta_ambigua_o_fuera(texto):
         "inscribirme",
         "inscrito",
         "inscrita",
+        "admision",
+        "ficha",
+        "ingreso",
         "laboratorio",
         "laboratorios",
         "libro",
@@ -1250,6 +1410,9 @@ def es_consulta_ambigua_o_fuera(texto):
     }
 
     contexto_documentos = {
+        "admision",
+        "ficha",
+        "ingreso",
         "inscripcion",
         "inscripciones",
         "inscribirme",
@@ -1482,6 +1645,11 @@ def buscar_respuesta(pregunta_usuario):
 
     tipo = TIPOS_CATEGORIA[categoria]
     respuesta = RESPUESTAS_CATEGORIA[categoria]
+
+    if categoria == "inscripcion":
+        respuesta = construir_respuesta_inscripcion(
+            pregunta_corregida
+        )
 
     return respuesta, tipo, categoria, confianza
 
