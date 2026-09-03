@@ -2123,9 +2123,14 @@ def identificar_categoria_prioritaria(texto):
         (
             "aviso",
             (
+                "avance de seminario de titulacion",
+                "eventos escolares",
                 "informacion nueva",
+                "mantenimiento de la plataforma",
                 "mensaje importante",
                 "novedades oficiales",
+                "registrarme a los talleres",
+                "registro a talleres",
             ),
         ),
         (
@@ -3463,7 +3468,7 @@ def construir_respuesta_examenes(
 
     return "\n".join(lineas)
 
-def construir_respuesta_avisos(matricula):
+def construir_respuesta_avisos(pregunta, matricula):
     avisos = obtener_avisos_por_estudiante(
         matricula
     )
@@ -3474,7 +3479,66 @@ def construir_respuesta_avisos(matricula):
             "para este estudiante."
         )
 
-    lineas = ["Estos son tus avisos escolares:"]
+    pregunta_normalizada = normalizar_texto(pregunta)
+
+    temas_aviso = (
+        (
+            ("taller", "extracurricular"),
+            ("taller",),
+        ),
+        (
+            ("mantenimiento", "plataforma"),
+            ("mantenimiento",),
+        ),
+        (
+            ("acompanamiento", "orientacion", "nuevo ingreso"),
+            ("acompanamiento", "orientacion"),
+        ),
+        (
+            ("practica integradora", "sistemas digitales"),
+            ("practica integradora",),
+        ),
+        (
+            ("feria", "emprendimiento", "innovacion"),
+            ("feria", "emprendimiento"),
+        ),
+        (
+            ("seminario", "titulacion", "avance"),
+            ("seminario", "avance"),
+        ),
+    )
+
+    avisos_filtrados = []
+    tema_solicitado = False
+
+    for palabras_consulta, palabras_aviso in temas_aviso:
+        if any(
+            palabra in pregunta_normalizada
+            for palabra in palabras_consulta
+        ):
+            tema_solicitado = True
+            avisos_filtrados = [
+                aviso
+                for aviso in avisos
+                if any(
+                    palabra in normalizar_texto(
+                        f"{aviso['titulo']} {aviso['mensaje']}"
+                    )
+                    for palabra in palabras_aviso
+                )
+            ]
+            break
+
+    if avisos_filtrados:
+        avisos = avisos_filtrados
+        lineas = ["Este es el aviso que encontré:"]
+    elif tema_solicitado:
+        return (
+            "No encontré ese aviso entre los comunicados "
+            "generales o correspondientes a tu semestre."
+        )
+    else:
+        lineas = ["Estos son tus avisos escolares:"]
 
     for aviso in avisos:
         fecha = date.fromisoformat(
@@ -3636,6 +3700,7 @@ def procesar_consulta(pregunta, estudiante):
 
     elif categoria == "aviso":
         respuesta = construir_respuesta_avisos(
+            pregunta,
             estudiante["matricula"]
         )
 
