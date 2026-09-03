@@ -713,6 +713,7 @@ def construir_respuesta_cafeteria(pregunta):
             "telefono",
             "queja",
             "sugerencia",
+            "preguntar",
             "pregunto",
             "con quien",
         )
@@ -775,6 +776,197 @@ def construir_respuesta_cafeteria(pregunta):
         "9:00 a. m. a 5:00 p. m. y los sábados de 9:00 a. m. a 2:00 p. m. "
         "Puedes preguntar por ubicación, menú, precios, formas de pago, "
         "horarios o restricciones."
+    )
+
+
+def construir_respuesta_laboratorio(pregunta):
+    """Construye respuestas específicas sobre los laboratorios."""
+    texto = normalizar_texto(pregunta)
+
+    if any(
+        frase in texto
+        for frase in (
+            "ubicacion",
+            "donde esta",
+            "donde queda",
+            "donde se encuentra",
+            "como llego",
+        )
+    ):
+        return (
+            "El Instituto Irapuato cuenta con laboratorios en:\n"
+            "- Universidad: edificio D, segunda planta.\n"
+            "- Preparatoria: edificio G, segunda planta."
+        )
+
+    if any(
+        palabra in texto
+        for palabra in (
+            "horario",
+            "hora",
+            "abre",
+            "abren",
+            "cierra",
+            "cierran",
+            "sabado",
+        )
+    ):
+        return (
+            "Horario de los laboratorios:\n"
+            "- Lunes a viernes: 7:00 a. m. a 5:00 p. m.\n"
+            "- Sábados: 7:00 a. m. a 2:00 p. m.\n"
+            "El acceso depende de la disponibilidad y autorización del "
+            "responsable o docente."
+        )
+
+    if any(
+        palabra in texto
+        for palabra in (
+            "reservar",
+            "reservacion",
+            "apartar",
+            "agendar",
+            "solicitar uso",
+        )
+    ):
+        return (
+            "Para reservar un laboratorio, solicita previamente la "
+            "autorización del encargado o del asesor de tu grupo. Si el "
+            "laboratorio se utilizará durante una clase, el profesor debe "
+            "apartarlo con anticipación. La reservación depende del horario "
+            "y la disponibilidad del espacio."
+        )
+
+    if any(
+        palabra in texto
+        for palabra in (
+            "entrar",
+            "ingresar",
+            "acceso",
+            "requisito",
+            "requisitos",
+            "vestimenta",
+            "bata",
+            "calzado",
+            "cabello",
+            "gafas",
+            "guantes",
+            "mascarilla",
+            "sandalia",
+            "sandalias",
+            "proteccion",
+        )
+    ):
+        return (
+            "Para ingresar al laboratorio necesitas autorización del "
+            "encargado, asesor o profesor responsable. Durante las prácticas:\n"
+            "- Usa bata limpia, de manga larga y abotonada.\n"
+            "- Lleva calzado completamente cerrado.\n"
+            "- Mantén recogido el cabello largo.\n"
+            "- Utiliza gafas, guantes y mascarilla cuando la práctica lo "
+            "requiera.\n"
+            "- Evita accesorios o prendas sueltas."
+        )
+
+    if any(
+        palabra in texto
+        for palabra in (
+            "regla",
+            "reglas",
+            "seguridad",
+            "conducta",
+            "prohibido",
+            "comer",
+            "beber",
+            "pipetear",
+            "limpieza",
+            "correr",
+            "mochila",
+            "mochilas",
+        )
+    ):
+        return (
+            "Reglas principales de seguridad en los laboratorios:\n"
+            "- No comas, bebas, fumes, almacenes alimentos ni uses "
+            "cosméticos.\n"
+            "- Nunca pipetees con la boca; utiliza instrumentos mecánicos.\n"
+            "- Mantén limpia y ordenada el área de trabajo.\n"
+            "- No coloques mochilas, libros u objetos personales sobre las "
+            "mesas de práctica.\n"
+            "- Evita bromas, carreras y cualquier distractor.\n"
+            "- Usa el equipo de protección indicado y sigue las instrucciones "
+            "del responsable."
+        )
+
+    if any(
+        frase in texto
+        for frase in (
+            "tipo de laboratorio",
+            "tipos de laboratorio",
+            "que laboratorios",
+            "cuales laboratorios",
+        )
+    ):
+        return (
+            "No tengo registrado un inventario oficial de los tipos de "
+            "laboratorio disponibles. El espacio se asigna de acuerdo con la "
+            "materia y la práctica; confirma con tu profesor, asesor o con el "
+            "encargado cuál corresponde y si está disponible."
+        )
+
+    if any(
+        palabra in texto
+        for palabra in (
+            "equipo",
+            "equipos",
+            "instrumento",
+            "instrumentos",
+            "herramienta",
+            "herramientas",
+            "computadora",
+            "computadoras",
+            "servicio",
+            "servicios",
+            "practica",
+            "practicas",
+        )
+    ):
+        return (
+            "Los laboratorios se utilizan para prácticas académicas "
+            "supervisadas. De forma general pueden contar con mesas de "
+            "trabajo, computadoras, instrumentos de medición, herramientas "
+            "y materiales acordes con cada asignatura. El equipo disponible "
+            "y las condiciones de uso deben confirmarse con el encargado "
+            "antes de la práctica."
+        )
+
+    if any(
+        palabra in texto
+        for palabra in (
+            "responsable",
+            "encargado",
+            "autoriza",
+            "autorizar",
+            "contacto",
+            "correo",
+            "telefono",
+            "comunicarme",
+        )
+    ):
+        return (
+            "Para este prototipo, el responsable simulado es el Ing. Adrián "
+            "Morales Vega, encargado general de laboratorios. Contacto "
+            "simulado: laboratorios@eduia.edu.mx y (462) 623 5969 ext. 245.\n"
+            "Estos datos no son oficiales; para una solicitud real consulta "
+            "a tu asesor, profesor o al personal del laboratorio."
+        )
+
+    return (
+        "Los laboratorios del Instituto Irapuato se utilizan durante clases "
+        "y prácticas académicas. Para ingresar o reservarlos necesitas la "
+        "autorización del encargado, asesor o profesor responsable. Puedes "
+        "preguntar por ubicación, horario, reservación, requisitos de "
+        "ingreso, seguridad, equipos o contacto."
     )
 
 
@@ -1866,6 +2058,17 @@ def identificar_categoria_prioritaria(texto):
         "laboratorio": {
             "laboratorio",
             "laboratorios",
+            "bata",
+            "cabello",
+            "gafas",
+            "guantes",
+            "mascarilla",
+            "mochila",
+            "mochilas",
+            "pipetear",
+            "sandalia",
+            "sandalias",
+            "seguridad",
         },
         "cafeteria": {
             "cafeteria",
@@ -1999,8 +2202,15 @@ def identificar_categoria_prioritaria(texto):
             (
                 "agendar una practica",
                 "apartar una practica",
+                "cabello largo",
+                "entrar un estudiante sin profesor",
+                "ingresar con sandalias",
+                "ingresar sin profesor",
+                "mochila sobre la mesa",
                 "reservar una practica",
+                "reglas de seguridad",
                 "reservo una practica",
+                "utilizar gafas y guantes",
             ),
         ),
         (
@@ -2350,6 +2560,33 @@ def obtener_respuesta_aclaracion(texto):
             "sus datos académicos. ¿Quieres consultar esa información?"
         )
 
+    referencias_uso = {
+        "usarlo",
+        "usarla",
+        "utilizarlo",
+        "utilizarla",
+    }
+
+    contexto_uso = {
+        "biblioteca",
+        "cafeteria",
+        "computadora",
+        "equipo",
+        "laboratorio",
+        "libro",
+        "salon",
+    }
+
+    if (
+        palabras & referencias_uso
+        and not palabras & contexto_uso
+    ):
+        return (
+            "¿Qué espacio, equipo o servicio universitario deseas "
+            "utilizar? Por ejemplo, un laboratorio, la biblioteca o una "
+            "computadora."
+        )
+
     return None
 
 def es_consulta_ambigua_o_fuera(texto):
@@ -2391,8 +2628,6 @@ def es_consulta_ambigua_o_fuera(texto):
         "lonches",
         "medica",
         "medico",
-        "mochila",
-        "mochilas",
         "musica",
         "noticia",
         "noticias",
@@ -2415,7 +2650,6 @@ def es_consulta_ambigua_o_fuera(texto):
         "ruta",
         "salud",
         "taxi",
-        "telefono",
         "trafico",
         "transporte",
         "videojuego",
@@ -2423,7 +2657,6 @@ def es_consulta_ambigua_o_fuera(texto):
         "virus",
         "vuelo",
         "vuelos",
-        "wifi",
     }
 
     if palabras & palabras_fuera_alcance:
@@ -2437,6 +2670,8 @@ def es_consulta_ambigua_o_fuera(texto):
         "puerto vallarta",
         "de que esta hecho el cafe",
         "como se prepara el cafe",
+        "contrasena del wifi",
+        "marcas de mochilas",
     }
 
     if any(
@@ -2950,6 +3185,11 @@ def buscar_respuesta(pregunta_usuario):
 
     elif categoria == "titulacion":
         respuesta = construir_respuesta_titulacion(
+            pregunta_corregida
+        )
+
+    elif categoria == "laboratorio":
+        respuesta = construir_respuesta_laboratorio(
             pregunta_corregida
         )
 
