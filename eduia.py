@@ -560,6 +560,224 @@ def construir_respuesta_biblioteca(pregunta):
     )
 
 
+def construir_respuesta_cafeteria(pregunta):
+    """Construye respuestas específicas sobre las cafeterías."""
+    texto = normalizar_texto(pregunta)
+
+    if any(
+        frase in texto
+        for frase in (
+            "ubicacion",
+            "donde esta",
+            "donde queda",
+            "donde se encuentra",
+            "como llego",
+        )
+    ):
+        return (
+            "El Instituto Irapuato cuenta con tres áreas de cafetería:\n"
+            "- Una en el área de Preparatoria.\n"
+            "- Una en la entrada del área de Universidad.\n"
+            "- Una en la parte posterior izquierda del área de Universidad."
+        )
+
+    if any(
+        palabra in texto
+        for palabra in (
+            "horario",
+            "hora",
+            "abre",
+            "abren",
+            "cierra",
+            "cierran",
+            "sabado",
+        )
+    ):
+        return (
+            "Horario de las cafeterías:\n"
+            "- Lunes a viernes: 9:00 a. m. a 5:00 p. m.\n"
+            "- Sábados: 9:00 a. m. a 2:00 p. m.\n"
+            "El servicio se mantiene disponible durante ese horario, "
+            "incluidos los recesos y las horas libres."
+        )
+
+    palabras_precio = (
+        "precio",
+        "precios",
+        "cuanto cuesta",
+        "cuanto cuestan",
+        "costo",
+        "costos",
+        "vale",
+    )
+
+    if any(palabra in texto for palabra in palabras_precio):
+        if "torta con queso" in texto:
+            detalle = "La torta con queso cuesta aproximadamente $25."
+        elif "torta" in texto:
+            detalle = "La torta cuesta aproximadamente $20."
+        elif "quesadilla" in texto:
+            detalle = (
+                "La quesadilla cuesta desde $20; el precio depende del guiso."
+            )
+        elif "taco" in texto:
+            detalle = "Cada taco cuesta aproximadamente $15."
+        elif "refresco" in texto:
+            detalle = "El refresco cuesta aproximadamente $25."
+        elif "sabritas" in texto:
+            detalle = "Las Sabritas cuestan aproximadamente $20."
+        elif "energetica" in texto:
+            detalle = "La bebida energética cuesta aproximadamente $40."
+        else:
+            detalle = (
+                "Precios aproximados:\n"
+                "- Refresco: $25.\n"
+                "- Sabritas: $20.\n"
+                "- Taco: $15 cada uno.\n"
+                "- Torta: $20.\n"
+                "- Torta con queso: $25.\n"
+                "- Quesadilla: desde $20; depende del guiso.\n"
+                "- Bebida energética: $40."
+            )
+
+        return (
+            f"{detalle}\n"
+            "Los precios son aproximados y pueden cambiar. Consulta "
+            "directamente en Cafetería los productos sin precio registrado."
+        )
+
+    if any(
+        frase in texto
+        for frase in (
+            "metodo de pago",
+            "metodos de pago",
+            "forma de pago",
+            "formas de pago",
+            "pagar con",
+            "aceptan tarjeta",
+            "aceptan transferencia",
+            "pago en efectivo",
+        )
+    ):
+        return (
+            "En las cafeterías puedes pagar en efectivo, mediante "
+            "transferencia o con tarjeta de crédito o débito. Confirma "
+            "la disponibilidad del medio de pago al momento de comprar."
+        )
+
+    if any(
+        palabra in texto
+        for palabra in (
+            "alcohol",
+            "alcoholica",
+            "alcoholicas",
+            "cerveza",
+            "cigarro",
+            "cigarros",
+            "tabaco",
+            "restriccion",
+            "restricciones",
+            "prohibido",
+        )
+    ):
+        return (
+            "Las cafeterías no venden bebidas alcohólicas, cigarros ni "
+            "productos de tabaco. También se deben respetar las reglas de "
+            "convivencia y limpieza de cada área."
+        )
+
+    if any(
+        frase in texto
+        for frase in (
+            "durante el receso",
+            "durante los recesos",
+            "hora libre",
+            "horas libres",
+            "todo el tiempo",
+            "todo momento",
+            "siempre hay servicio",
+        )
+    ):
+        return (
+            "Las cafeterías brindan servicio continuo dentro de su horario, "
+            "incluidos los recesos y las horas libres: de lunes a viernes de "
+            "9:00 a. m. a 5:00 p. m. y los sábados de 9:00 a. m. a 2:00 p. m."
+        )
+
+    if any(
+        palabra in texto
+        for palabra in (
+            "responsable",
+            "contacto",
+            "correo",
+            "telefono",
+            "queja",
+            "sugerencia",
+            "pregunto",
+            "con quien",
+        )
+    ):
+        return (
+            "Para consultar el menú, los precios, la disponibilidad o dejar "
+            "una sugerencia, dirígete directamente al personal de cualquiera "
+            "de las tres cafeterías del Instituto Irapuato. No tengo "
+            "registrado un teléfono o correo específico."
+        )
+
+    palabras_menu = (
+        "menu",
+        "venden",
+        "venta",
+        "comer",
+        "comida",
+        "alimento",
+        "alimentos",
+        "bebida",
+        "bebidas",
+        "refresco",
+        "refrescos",
+        "sabritas",
+        "agua",
+        "aguas",
+        "energetica",
+        "energeticas",
+        "galleta",
+        "galletas",
+        "arroz",
+        "burrito",
+        "burritos",
+        "sandwich",
+        "sandwiches",
+        "hamburguesa",
+        "hamburguesas",
+        "papas",
+        "pizza",
+        "taco",
+        "tacos",
+        "torta",
+        "tortas",
+        "quesadilla",
+        "quesadillas",
+    )
+
+    if any(palabra in texto for palabra in palabras_menu):
+        return (
+            "En las cafeterías puedes encontrar refrescos, agua, bebidas "
+            "energéticas, Sabritas y galletas. También ofrecen alimentos "
+            "como arroz, burritos, sándwiches, hamburguesas, papas a la "
+            "francesa, pizza, tacos, tortas y quesadillas. La disponibilidad "
+            "puede variar durante el día."
+        )
+
+    return (
+        "El Instituto Irapuato cuenta con tres cafeterías que ofrecen "
+        "alimentos, botanas y bebidas. Atienden de lunes a viernes de "
+        "9:00 a. m. a 5:00 p. m. y los sábados de 9:00 a. m. a 2:00 p. m. "
+        "Puedes preguntar por ubicación, menú, precios, formas de pago, "
+        "horarios o restricciones."
+    )
+
+
 def construir_respuesta_inscripcion(pregunta):
     """Construye una respuesta específica sobre inscripción."""
     texto = normalizar_texto(pregunta)
@@ -1654,13 +1872,34 @@ def identificar_categoria_prioritaria(texto):
             "cafeteira",
             "almuerzo",
             "almuerzos",
+            "arroz",
+            "burrito",
+            "burritos",
             "desayuno",
             "desayunos",
             "bebida",
             "bebidas",
+            "energetica",
+            "energeticas",
+            "galleta",
+            "galletas",
+            "hamburguesa",
+            "hamburguesas",
             "menu",
             "comida",
             "alimentos",
+            "pizza",
+            "quesadilla",
+            "quesadillas",
+            "refresco",
+            "refrescos",
+            "sabritas",
+            "sandwich",
+            "sandwiches",
+            "taco",
+            "tacos",
+            "torta",
+            "tortas",
         },
     }
 
@@ -1710,6 +1949,15 @@ def identificar_categoria_prioritaria(texto):
                 "lugar silencioso",
                 "prestamo bibliografico",
                 "reglas de prestamo",
+            ),
+        ),
+        (
+            "cafeteria",
+            (
+                "abierto durante el receso",
+                "abren durante el receso",
+                "servicio durante el receso",
+                "servicio durante los recesos",
             ),
         ),
         (
@@ -1818,7 +2066,25 @@ def identificar_categoria_prioritaria(texto):
         ("biblioteca", ("bibliotec", "lectur", "prestam")),
         ("beca", ("bec", "benefici", "financ")),
         ("laboratorio", ("laborator",)),
-        ("cafeteria", ("aliment", "almuerz", "bebid", "cafeter", "comedor")),
+        (
+            "cafeteria",
+            (
+                "aliment",
+                "almuerz",
+                "bebid",
+                "burrit",
+                "cafeter",
+                "comedor",
+                "gallet",
+                "hamburgues",
+                "pizza",
+                "quesadill",
+                "refresc",
+                "sandwich",
+                "taco",
+                "torta",
+            ),
+        ),
         ("horario", ("clase", "horar", "salon")),
         ("materia", ("asignatur", "materi")),
         ("academica", ("algorit", "ejerc", "neuronal", "pseudocod")),
@@ -2191,14 +2457,33 @@ def es_consulta_ambigua_o_fuera(texto):
     contexto_cafeteria = {
         "alimento",
         "alimentos",
+        "arroz",
         "bebida",
         "bebidas",
+        "burrito",
+        "burritos",
         "cafe",
         "cafeteria",
         "cafeteira",
         "comida",
         "desayuno",
+        "galleta",
+        "galletas",
+        "hamburguesa",
+        "hamburguesas",
         "menu",
+        "pizza",
+        "quesadilla",
+        "quesadillas",
+        "refresco",
+        "refrescos",
+        "sabritas",
+        "sandwich",
+        "sandwiches",
+        "taco",
+        "tacos",
+        "torta",
+        "tortas",
     }
 
     if (
@@ -2273,6 +2558,8 @@ def es_consulta_ambigua_o_fuera(texto):
         "profesor",
         "profesores",
         "promedio",
+        "receso",
+        "recesos",
         "reinscripcion",
         "reinscribirme",
         "reinscrito",
@@ -2435,21 +2722,42 @@ def es_consulta_ambigua_o_fuera(texto):
 
     contexto_precio = {
         "actualizacion",
+        "arroz",
         "cafeteria",
         "ceneval",
         "comida",
         "alimento",
         "alimentos",
+        "burrito",
+        "burritos",
         "menu",
         "desayuno",
         "bebida",
         "bebidas",
+        "energetica",
+        "energeticas",
+        "galleta",
+        "galletas",
         "grado",
+        "hamburguesa",
+        "hamburguesas",
         "excelencia",
         "maestria",
         "modalidad",
+        "pizza",
         "posgrado",
+        "quesadilla",
+        "quesadillas",
+        "refresco",
+        "refrescos",
+        "sabritas",
+        "sandwich",
+        "sandwiches",
+        "taco",
+        "tacos",
         "tesis",
+        "torta",
+        "tortas",
         "titulacion",
         "titulo",
     }
@@ -2642,6 +2950,11 @@ def buscar_respuesta(pregunta_usuario):
 
     elif categoria == "titulacion":
         respuesta = construir_respuesta_titulacion(
+            pregunta_corregida
+        )
+
+    elif categoria == "cafeteria":
+        respuesta = construir_respuesta_cafeteria(
             pregunta_corregida
         )
 
