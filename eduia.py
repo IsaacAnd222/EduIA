@@ -362,6 +362,204 @@ RESPUESTAS_CATEGORIA = {
 }
 
 
+def construir_respuesta_biblioteca(pregunta):
+    """Construye respuestas específicas sobre la biblioteca."""
+    texto = normalizar_texto(pregunta)
+
+    if any(
+        palabra in texto
+        for palabra in (
+            "ubicacion",
+            "donde esta",
+            "donde queda",
+            "donde se encuentra",
+            "edificio",
+            "localizar",
+        )
+    ):
+        return (
+            "El Instituto Irapuato cuenta con dos espacios de biblioteca:\n"
+            "- Universidad: edificio A, planta baja.\n"
+            "- Preparatoria: edificio G, planta baja."
+        )
+
+    if any(
+        palabra in texto
+        for palabra in (
+            "horario",
+            "hora",
+            "abre",
+            "abren",
+            "cierra",
+            "cierran",
+            "sabado",
+        )
+    ):
+        return (
+            "Horario de Biblioteca:\n"
+            "- Lunes a viernes: 9:00 a. m. a 5:00 p. m.\n"
+            "- Sábados: 9:00 a. m. a 2:30 p. m."
+        )
+
+    if any(
+        frase in texto
+        for frase in (
+            "cuantos libros",
+            "cantidad de libros",
+            "maximo de libros",
+            "limite de libros",
+        )
+    ):
+        return (
+            "No tengo registrado el número máximo de libros que puede "
+            "solicitar cada estudiante. Confirma este límite directamente "
+            "en Biblioteca presentando tu credencial universitaria."
+        )
+
+    if any(
+        palabra in texto
+        for palabra in (
+            "devolver tarde",
+            "entrega tardia",
+            "entregar tarde",
+            "multa",
+            "multas",
+            "atraso",
+            "atrasado",
+            "retraso",
+            "tarde un libro",
+            "vencido",
+            "penalizacion",
+            "sancion",
+        )
+    ):
+        return (
+            "Como regla de referencia de EduIA, un material vencido debe "
+            "devolverse antes de solicitar nuevos préstamos y el servicio "
+            "puede suspenderse temporalmente mientras exista el retraso. "
+            "No tengo registrada una multa económica oficial; confirma las "
+            "consecuencias vigentes directamente en Biblioteca."
+        )
+
+    if any(
+        palabra in texto
+        for palabra in (
+            "renovar",
+            "renovacion",
+            "duracion",
+            "cuanto dura",
+            "cuantos dias",
+            "cuantas semanas",
+            "devolver",
+            "devolucion",
+            "vence",
+        )
+    ):
+        return (
+            "El préstamo de libros tiene una duración de dos semanas. "
+            "Si necesitas conservar el material por más tiempo, solicita "
+            "la renovación en Biblioteca antes de la fecha de vencimiento; "
+            "su autorización depende de la disponibilidad del ejemplar."
+        )
+
+    if any(
+        palabra in texto
+        for palabra in (
+            "regla",
+            "reglas",
+            "permitido",
+            "prohibido",
+            "comer",
+            "bebida",
+            "gritar",
+            "correr",
+            "silencio",
+        )
+    ):
+        return (
+            "Reglas principales de Biblioteca:\n"
+            "- Mantén un tono de voz bajo y respeta las zonas de estudio.\n"
+            "- No corras, grites, comas ni introduzcas bebidas abiertas.\n"
+            "- Cuida los libros, computadoras, mesas y demás instalaciones.\n"
+            "- Devuelve los materiales dentro del plazo establecido.\n"
+            "- Utiliza Internet y los equipos con fines académicos.\n"
+            "- Sigue las indicaciones del personal responsable."
+        )
+
+    if any(
+        palabra in texto
+        for palabra in (
+            "contacto",
+            "correo",
+            "telefono",
+            "responsable",
+            "comunicarme",
+            "llamar",
+        )
+    ):
+        return (
+            "Puedes comunicarte con Biblioteca al teléfono "
+            "(462) 623 5969 o al correo biblioteca@correo.edu.mx."
+        )
+
+    if any(
+        palabra in texto
+        for palabra in (
+            "computadora",
+            "computadoras",
+            "internet",
+            "wifi",
+            "mesa",
+            "mesas",
+            "silla",
+            "sillas",
+            "sillon",
+            "sillones",
+            "estudiar",
+            "estudio",
+            "espacio",
+            "espacios",
+            "servicio",
+            "servicios",
+        )
+    ):
+        return (
+            "La Biblioteca ofrece préstamo de libros, Internet Wi-Fi, "
+            "computadoras y zonas de estudio. Cuenta con varias mesas y "
+            "sillas, además de algunos sillones para lectura y trabajo "
+            "académico."
+        )
+
+    if any(
+        palabra in texto
+        for palabra in (
+            "credencial",
+            "requisito",
+            "requisitos",
+            "solicitar",
+            "sacar",
+            "pedir",
+            "prestar",
+            "prestado",
+            "llevarme",
+        )
+    ):
+        return (
+            "Para solicitar un libro en préstamo debes presentar tu "
+            "credencial vigente de la Universidad. El préstamo tiene una "
+            "duración de dos semanas y está sujeto a la disponibilidad "
+            "del ejemplar."
+        )
+
+    return (
+        "La Biblioteca del Instituto Irapuato ofrece préstamo de libros, "
+        "Internet Wi-Fi, computadoras y espacios de estudio. Para solicitar "
+        "material presenta tu credencial universitaria; el préstamo dura "
+        "dos semanas. Puedes indicar si deseas consultar ubicación, horario, "
+        "requisitos, renovación, servicios, reglas o contacto."
+    )
+
+
 def construir_respuesta_inscripcion(pregunta):
     """Construye una respuesta específica sobre inscripción."""
     texto = normalizar_texto(pregunta)
@@ -2429,6 +2627,11 @@ def buscar_respuesta(pregunta_usuario):
 
     if categoria == "inscripcion":
         respuesta = construir_respuesta_inscripcion(
+            pregunta_corregida
+        )
+
+    elif categoria == "biblioteca":
+        respuesta = construir_respuesta_biblioteca(
             pregunta_corregida
         )
 
