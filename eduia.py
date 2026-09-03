@@ -207,6 +207,18 @@ datos_entrenamiento = [
     ("qué modalidades existen para terminar la carrera", "titulacion"),
     ("dónde entrego mi expediente para obtener el grado", "titulacion"),
     ("cómo obtengo el grado al finalizar la carrera", "titulacion"),
+    ("cuáles son las modalidades de titulación", "titulacion"),
+    ("puedo titularme por excelencia académica", "titulacion"),
+    ("qué necesito para titularme por tesis", "titulacion"),
+    ("puedo titularme por informe de servicio social", "titulacion"),
+    ("qué requiere el informe de experiencia profesional", "titulacion"),
+    ("puedo titularme mediante estudios de posgrado", "titulacion"),
+    ("qué puntaje necesito en el ceneval", "titulacion"),
+    ("cómo funciona el curso de actualización profesional", "titulacion"),
+    ("cuánto cuesta la titulación", "titulacion"),
+    ("cuánto tarda la entrega del título", "titulacion"),
+    ("cómo tramito mi cédula profesional", "titulacion"),
+    ("dónde contacto al área de titulaciones", "titulacion"),
 
     # Laboratorios
     ("dónde están los laboratorios", "laboratorio"),
@@ -822,6 +834,330 @@ def construir_respuesta_beca(pregunta):
         "final lo determina el Comité de Becas y Apoyos Financieros."
     )
 
+
+def construir_respuesta_titulacion(pregunta):
+    """Construye respuestas específicas sobre titulación."""
+    texto = normalizar_texto(pregunta)
+
+    if any(
+        frase in texto
+        for frase in (
+            "que es la titulacion",
+            "que significa titularme",
+            "en que consiste la titulacion",
+        )
+    ):
+        return (
+            "La titulación es el proceso mediante el cual un egresado "
+            "cumple una modalidad académica y los requisitos administrativos "
+            "para obtener su título profesional. La modalidad debe ser "
+            "autorizada y el trámite se realiza con Servicios Escolares y "
+            "el área de Titulaciones del Instituto Irapuato."
+        )
+
+    palabras_costo = (
+        "costo",
+        "costos",
+        "cuesta",
+        "precio",
+        "pagar",
+        "pago",
+    )
+
+    if any(palabra in texto for palabra in palabras_costo):
+        if "curso" in texto and "extern" in texto:
+            detalle = "Curso de actualización externo: $10,000."
+        elif "curso" in texto:
+            detalle = "Curso de actualización interno: $13,000."
+        elif "posgrado" in texto or "maestria" in texto:
+            detalle = "Estudios de Posgrado: $11,000."
+        elif "tesis" in texto:
+            detalle = "Tesis: $10,000."
+        elif "excelencia" in texto:
+            detalle = "Excelencia Académica: $10,000."
+        elif "servicio social" in texto:
+            detalle = "Informe de Servicio Social: $10,000."
+        elif "experiencia profesional" in texto:
+            detalle = "Informe de Experiencia Profesional: $10,000."
+        elif "ceneval" in texto or "examen general" in texto:
+            detalle = "CENEVAL: $10,000."
+        else:
+            detalle = (
+                "Tesis, Excelencia Académica, Informe de Servicio Social, "
+                "Informe de Experiencia Profesional y CENEVAL: $10,000 cada "
+                "modalidad; Estudios de Posgrado: $11,000; Curso de "
+                "actualización interno: $13,000; curso externo: $10,000."
+            )
+
+        return (
+            f"Costo de referencia, con título incluido: {detalle} "
+            "Confirma el importe vigente con Titulaciones y espera la "
+            "autorización antes de efectuar el pago."
+        )
+
+    if "excelencia" in texto:
+        return (
+            "Para titularte por Excelencia Académica debes:\n"
+            "- Haber concluido completamente el plan de estudios.\n"
+            "- Tener promedio general mínimo de 9.5, sin redondeo.\n"
+            "- Haber aprobado todas las materias en la primera oportunidad.\n"
+            "- Ser alumno regular y no haber causado baja temporal.\n"
+            "- Cumplir todos los requisitos administrativos.\n"
+            "La autorización se solicita por escrito a la Comisión de "
+            "Titulación mediante Servicios Escolares. Esta modalidad debe "
+            "iniciarse dentro del primer año posterior al egreso."
+        )
+
+    if "tesis" in texto:
+        return (
+            "La tesis es un trabajo de investigación que puede iniciarse "
+            "desde 7.º semestre y desarrollarse individualmente o en pareja.\n"
+            "Debes concluir el plan de estudios, cumplir los requisitos "
+            "administrativos y obtener la aprobación escrita del asesor y "
+            "los sinodales. Después se presenta un examen recepcional.\n"
+            "El anteproyecto tiene un plazo máximo de dos meses; una vez "
+            "aprobado, el trabajo final debe concluirse en diez meses, con "
+            "posibilidad de solicitar una prórroga de dos meses."
+        )
+
+    if "ceneval" in texto or "examen general de egreso" in texto:
+        return (
+            "Para titularte mediante el Examen General de Egreso de "
+            "Licenciatura (CENEVAL) debes solicitar autorización escrita a "
+            "Servicios Escolares antes de presentar el examen, haber "
+            "concluido el plan de estudios y obtener al menos 1000 puntos "
+            "en todas las áreas.\n"
+            "El examen puede presentarse un máximo de tres veces y el "
+            "resultado se comprueba con la constancia de CENEVAL. Esta opción "
+            "no aplica para Relaciones Industriales, Psicología Educativa ni "
+            "Relaciones Laborales y Recursos Humanos."
+        )
+
+    if (
+        "servicio social" in texto
+        or "informe social" in texto
+        or "magis" in texto
+    ):
+        return (
+            "La modalidad de Informe de Servicio Social documenta un proyecto "
+            "relacionado con la carrera, realizado durante el servicio social. "
+            "La opción MAGIS añade impacto social y valores institucionales.\n"
+            "Puede iniciarse desde 7.º semestre, cuando el servicio social ya "
+            "haya comenzado o terminado. El trabajo puede ser individual o en "
+            "pareja y requiere aprobación del asesor y los sinodales, además "
+            "de los requisitos administrativos y el examen recepcional."
+        )
+
+    if "experiencia profesional" in texto or "experiencia laboral" in texto:
+        return (
+            "El Informe de Experiencia Profesional documenta y analiza un "
+            "proyecto o práctica laboral relacionada con la carrera.\n"
+            "Puede iniciarse desde 7.º semestre, pero se requieren dos años "
+            "de experiencia profesional comprobable antes de solicitar la "
+            "modalidad. El trabajo puede ser individual o en pareja y debe "
+            "ser aprobado por el asesor y los sinodales. También requiere "
+            "cumplir los requisitos administrativos y presentar examen "
+            "recepcional."
+        )
+
+    if any(
+        frase in texto
+        for frase in (
+            "estudios de posgrado",
+            "estudios de maestria",
+            "por posgrado",
+            "por maestria",
+        )
+    ):
+        return (
+            "Para titularte mediante Estudios de Posgrado debes solicitar "
+            "autorización a Servicios Escolares antes de inscribirte al "
+            "posgrado, haber concluido la licenciatura y aprobar al menos "
+            "50 % de los créditos o materias de una maestría o doctorado con "
+            "reconocimiento oficial.\n"
+            "Si estudias en otra institución, debes presentar el certificado "
+            "parcial; si estudias en el Instituto Irapuato, una constancia de "
+            "calificaciones y del porcentaje cursado."
+        )
+
+    if any(
+        frase in texto
+        for frase in (
+            "curso de actualizacion",
+            "curso profesional",
+            "vision global",
+            "diplomado de titulacion",
+        )
+    ):
+        return (
+            "La modalidad de Curso de Actualización Profesional requiere "
+            "haber concluido el plan de estudios, cumplir los requisitos "
+            "administrativos y aprobar con mínimo 8.0. Los cursos internos "
+            "deben cubrir entre 80 y 100 horas; los externos, 100 horas y "
+            "autorización previa.\n"
+            "Convocatoria 2026, Visión Global de Estrategias Empresariales: "
+            "curso virtual del 3 de septiembre al 10 de diciembre, los jueves "
+            "de 4:00 p. m. a 9:00 p. m.; costo de $13,000. Las solicitudes "
+            "fueron del 23 al 27 de julio y el pago del 11 al 15 de agosto, "
+            "por lo que esos periodos ya concluyeron."
+        )
+
+    if any(
+        frase in texto
+        for frase in (
+            "modalidades de titulacion",
+            "opciones de titulacion",
+            "formas de titularme",
+            "formas de obtener mi titulo",
+            "como puedo titularme",
+            "modalidad puedo elegir",
+        )
+    ):
+        return (
+            "Las modalidades de titulación para licenciatura e ingeniería "
+            "son:\n"
+            "1. Excelencia Académica.\n"
+            "2. Tesis.\n"
+            "3. Informe de Servicio Social, normal o MAGIS.\n"
+            "4. Informe de Experiencia Profesional.\n"
+            "5. Estudios de Posgrado.\n"
+            "6. Curso de Actualización Profesional.\n"
+            "7. Examen General de Egreso de Licenciatura (CENEVAL).\n"
+            "La modalidad debe ser autorizada conforme a tu carrera y "
+            "situación académica."
+        )
+
+    if any(
+        palabra in texto
+        for palabra in (
+            "documento",
+            "documentos",
+            "papel",
+            "papeles",
+            "requisito",
+            "requisitos",
+            "fotografia",
+            "fotografias",
+        )
+    ):
+        return (
+            "Requisitos administrativos generales para titulación:\n"
+            "- Certificado total de estudios original.\n"
+            "- Servicio social liberado.\n"
+            "- Créditos culturales y deportivos liberados en modalidad "
+            "escolarizada.\n"
+            "- No tener adeudos en Finanzas ni Biblioteca.\n"
+            "- Comprobante de pago de la modalidad.\n"
+            "- Acta de nacimiento y certificado de preparatoria cuando el "
+            "programa esté incorporado a SEG.\n"
+            "- Nueve fotografías tamaño título, blanco y negro, papel mate "
+            "autoadherible, fondo gris claro, ropa formal, sin lentes y sin "
+            "alteraciones digitales.\n"
+            "Algunas carreras y modalidades solicitan documentos adicionales."
+        )
+
+    if any(
+        frase in texto
+        for frase in (
+            "cuanto tiempo tengo",
+            "plazo para titularme",
+            "fecha limite para titularme",
+            "cuando debo titularme",
+            "prorroga",
+        )
+    ):
+        return (
+            "Después de aprobar todas las materias tienes un máximo de dos "
+            "años para iniciar la titulación. Para Excelencia Académica el "
+            "límite es un año.\n"
+            "Antes de vencer los primeros dos años puede solicitarse ante "
+            "Rectoría una prórroga excepcional de hasta dos años. Si se "
+            "excede el plazo sin prórroga, la modalidad disponible será "
+            "Estudios de Posgrado."
+        )
+
+    if any(
+        frase in texto
+        for frase in (
+            "cuanto tarda",
+            "tiempo de entrega",
+            "cuando entregan",
+            "entrega del titulo",
+        )
+    ):
+        return (
+            "Para expedir el título debes contar con el certificado total de "
+            "estudios registrado por SEP o SEG y haber pagado la modalidad. "
+            "Los documentos proporcionados señalan un tiempo estimado de "
+            "entrega de 10 meses después de iniciar la validación y "
+            "legalización; para CENEVAL se indica un estimado de 4 meses. "
+            "Confirma el plazo actual con Titulaciones."
+        )
+
+    if "cedula" in texto:
+        return (
+            "La cédula profesional es un trámite posterior que el egresado "
+            "debe realizar personalmente ante la Dirección General de "
+            "Profesiones o las instancias de Servicios Escolares e "
+            "Incorporaciones correspondientes. La titulación del Instituto "
+            "no sustituye este trámite. Solicita requisitos y costos vigentes "
+            "al área de Titulaciones."
+        )
+
+    if any(
+        frase in texto
+        for frase in (
+            "donde inicio",
+            "donde registro",
+            "donde entrego",
+            "area de titulacion",
+            "area de titulaciones",
+            "contacto de titulacion",
+            "contactar titulaciones",
+            "correo de titulacion",
+            "telefono de titulacion",
+            "con quien",
+        )
+    ):
+        return (
+            "El trámite se inicia con Servicios Escolares y el área de "
+            "Titulaciones del Instituto Irapuato.\n"
+            "Solicitud en línea: "
+            "https://uii.edu.mx/se/tramite/titulo/licenciaturas/.\n"
+            "Contacto: titulaciones@serviciosescolares.uii.edu.mx, "
+            "teléfono (462) 623 5969 ext. 236 y celular 462 188 0618.\n"
+            "Espera el correo de autorización antes de efectuar cualquier pago."
+        )
+
+    if any(
+        palabra in texto
+        for palabra in (
+            "procedimiento",
+            "proceso",
+            "pasos",
+            "tramite",
+        )
+    ):
+        return (
+            "Proceso general de titulación:\n"
+            "1. Consulta la modalidad con tu coordinación académica.\n"
+            "2. Solicita la revisión y autorización de Servicios Escolares.\n"
+            "3. Cumple los requisitos académicos y administrativos.\n"
+            "4. Realiza el pago autorizado.\n"
+            "5. Completa y acredita la modalidad elegida.\n"
+            "6. Entrega comprobantes, documentos y nueve fotografías.\n"
+            "7. Espera la liberación y expedición del título.\n"
+            "Las modalidades escritas incluyen asesor, anteproyecto, revisión "
+            "de sinodales y examen recepcional."
+        )
+
+    return (
+        "Puedo informarte sobre modalidades, requisitos, documentos, costos, "
+        "plazos, procedimiento, curso de actualización 2026, entrega del "
+        "título, cédula profesional y contacto del área de Titulaciones. "
+        "Indica qué aspecto deseas consultar."
+    )
+
 TIPOS_CATEGORIA = {
     "saludo": "general",
     "capacidades": "general",
@@ -905,8 +1241,14 @@ PALABRAS_CLAVE_CORREGIBLES = {
 CORRECCIONES_DIRECTAS = {
     "abiso": "aviso",
     "abisos": "avisos",
+    "cocumemto": "documento",
+    "cocumemtos": "documentos",
+    "cocumento": "documento",
+    "cocumentos": "documentos",
     "evaluasion": "evaluacion",
     "evaluasiones": "evaluaciones",
+    "exelencia": "excelencia",
+    "exelensia": "excelencia",
     "kuando": "cuando",
     "akademiko": "academico",
     "asta": "hasta",
@@ -925,6 +1267,8 @@ CORRECCIONES_DIRECTAS = {
     "reientes": "recientes",
     "rejistro": "registro",
     "renobar": "renovar",
+    "requicito": "requisito",
+    "requicitos": "requisitos",
     "rezultado": "resultado",
     "saver": "saber",
     "veka": "beca",
@@ -1112,6 +1456,8 @@ def identificar_categoria_prioritaria(texto):
             "cafeteira",
             "almuerzo",
             "almuerzos",
+            "desayuno",
+            "desayunos",
             "bebida",
             "bebidas",
             "menu",
@@ -1214,6 +1560,14 @@ def identificar_categoria_prioritaria(texto):
         (
             "titulacion",
             (
+                "curso de actualizacion profesional",
+                "cedula profesional",
+                "excelencia academica",
+                "examen general de egreso",
+                "informe de experiencia profesional",
+                "informe de servicio social",
+                "estudios de maestria",
+                "estudios de posgrado",
                 "modalidad con la que terminare la carrera",
                 "procedimiento para obtener mi grado",
                 "via puedo escoger para conseguir el titulo",
@@ -1240,7 +1594,14 @@ def identificar_categoria_prioritaria(texto):
     # “impartir”, “acredité”, “inscrito” o “beneficiado”.
     raices_prioritarias = (
         ("profesor", ("impart", "docent", "maestr", "profesor")),
-        ("titulacion", ("titul", "grado")),
+        (
+            "titulacion",
+            (
+                "ceneval",
+                "titul",
+                "grado",
+            ),
+        ),
         (
             "calificacion",
             (
@@ -1382,6 +1743,58 @@ def obtener_respuesta_aclaracion(texto):
             "Necesito un poco más de información. "
             "¿Te refieres a realizar tu inscripción escolar, "
             "registrarte en una beca, taller o algún otro servicio?"
+        )
+
+    # La palabra "requisitos" por sí sola no permite saber si el
+    # estudiante pregunta por inscripción, becas o titulación. No se
+    # reutiliza automáticamente el tema del mensaje anterior, por lo que
+    # conviene solicitar el trámite o la modalidad correspondiente.
+    palabras_requisitos = {
+        "documento",
+        "documentos",
+        "papel",
+        "papeles",
+        "requisito",
+        "requisitos",
+    }
+
+    contexto_requisitos = {
+        "admision",
+        "beca",
+        "becas",
+        "ceneval",
+        "curso",
+        "deportiva",
+        "deportivo",
+        "excelencia",
+        "experiencia",
+        "familiar",
+        "ingreso",
+        "inscripcion",
+        "inscribirme",
+        "maestria",
+        "modalidad",
+        "modalidades",
+        "nuevo",
+        "posgrado",
+        "reinscripcion",
+        "servicio",
+        "social",
+        "tesis",
+        "titulacion",
+        "titularme",
+        "titulo",
+    }
+
+    if (
+        palabras & palabras_requisitos
+        and not palabras & contexto_requisitos
+    ):
+        return (
+            "¿De qué trámite deseas consultar los requisitos: "
+            "nuevo ingreso, reinscripción, becas, titulación u otro "
+            "servicio? Si es sobre titulación, también puedes indicar "
+            "la modalidad específica."
         )
 
     # Una calificación sin materia, examen o periodo puede referirse
@@ -1823,7 +2236,9 @@ def es_consulta_ambigua_o_fuera(texto):
     }
 
     contexto_precio = {
+        "actualizacion",
         "cafeteria",
+        "ceneval",
         "comida",
         "alimento",
         "alimentos",
@@ -1831,6 +2246,14 @@ def es_consulta_ambigua_o_fuera(texto):
         "desayuno",
         "bebida",
         "bebidas",
+        "grado",
+        "excelencia",
+        "maestria",
+        "modalidad",
+        "posgrado",
+        "tesis",
+        "titulacion",
+        "titulo",
     }
 
     if (
@@ -2011,6 +2434,11 @@ def buscar_respuesta(pregunta_usuario):
 
     elif categoria == "beca":
         respuesta = construir_respuesta_beca(
+            pregunta_corregida
+        )
+
+    elif categoria == "titulacion":
+        respuesta = construir_respuesta_titulacion(
             pregunta_corregida
         )
 
