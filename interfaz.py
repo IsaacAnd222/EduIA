@@ -11,7 +11,9 @@ from voz import hablar
 
 from eduia import (
     crear_contexto_conversacional,
+    es_consulta_internet,
     procesar_consulta,
+    procesar_consulta_internet,
 )
 from base_datos import (
     buscar_estudiante,
@@ -76,6 +78,8 @@ class AplicacionEduIA(ctk.CTk):
         self.animacion_id = None
         self.boton_microfono = None
         self.escuchando = False
+        self.busqueda_internet_activa = False
+        self.token_busqueda_internet = None
         self.voz_activada = ctk.BooleanVar(
             value=True
         )
@@ -619,6 +623,8 @@ class AplicacionEduIA(ctk.CTk):
                 mensaje,
             )
 
+        return etiqueta_mensaje
+
     def agregar_metadatos_respuesta(
         self,
         tipo,
@@ -813,6 +819,113 @@ class AplicacionEduIA(ctk.CTk):
         self.entrada_consulta.insert(0, texto)
         self.enviar_consulta()
 
+    def iniciar_busqueda_internet(self, consulta):
+        self.busqueda_internet_activa = True
+        token = object()
+        self.token_busqueda_internet = token
+
+        etiqueta_estado = self.agregar_mensaje(
+            "EduIA",
+            "Buscando en Wikipedia...",
+        )
+
+        hilo = threading.Thread(
+            target=self.ejecutar_busqueda_internet,
+            args=(
+                consulta,
+                dict(self.estudiante_actual),
+                self.contexto_conversacion,
+                etiqueta_estado,
+                token,
+            ),
+            daemon=True,
+        )
+        hilo.start()
+
+    def ejecutar_busqueda_internet(
+        self,
+        consulta,
+        estudiante,
+        contexto,
+        etiqueta_estado,
+        token,
+    ):
+        try:
+            resultado = procesar_consulta_internet(
+                consulta,
+                estudiante,
+                contexto,
+            )
+        except Exception:
+            resultado = (
+                "Ocurrió un problema inesperado al consultar Wikipedia.",
+                "externa",
+                "internet",
+                0.0,
+                None,
+            )
+
+        self.after(
+            0,
+            lambda: self.finalizar_busqueda_internet(
+                resultado,
+                etiqueta_estado,
+                token,
+            ),
+        )
+
+    def finalizar_busqueda_internet(
+        self,
+        resultado,
+        etiqueta_estado,
+        token,
+    ):
+        if token is not self.token_busqueda_internet:
+            return
+
+        self.busqueda_internet_activa = False
+        self.token_busqueda_internet = None
+
+        if not etiqueta_estado.winfo_exists():
+            return
+
+        (
+            respuesta,
+            tipo,
+            categoria,
+            confianza,
+            historial_id,
+        ) = resultado
+
+        etiqueta_estado.configure(
+            text=respuesta
+        )
+        self.desplazar_al_final()
+
+        if self.voz_activada.get():
+            respuesta_hablada = respuesta.split(
+                "\n\nFuente: Wikipedia",
+                1,
+            )[0]
+
+            hilo_voz = threading.Thread(
+                target=hablar,
+                args=(respuesta_hablada,),
+                daemon=True,
+            )
+            hilo_voz.start()
+
+        self.agregar_metadatos_respuesta(
+            tipo,
+            categoria,
+            confianza,
+        )
+
+        if historial_id is not None:
+            self.agregar_opciones_retroalimentacion(
+                historial_id
+            )
+
     def enviar_consulta_rapida(self, consulta):
         if self.entrada_consulta is None:
             return
@@ -847,11 +960,24 @@ class AplicacionEduIA(ctk.CTk):
             self.cerrar_sesion()
             return
 
+        if self.busqueda_internet_activa:
+            self.agregar_mensaje(
+                "EduIA",
+                "Espera a que termine la búsqueda actual.",
+            )
+            return
+
         self.agregar_mensaje(
             "Tú",
             consulta,
         )
         self.entrada_consulta.delete(0, "end")
+
+        if es_consulta_internet(consulta):
+            self.iniciar_busqueda_internet(
+                consulta
+            )
+            return
 
         (
             respuesta,
@@ -1065,6 +1191,8 @@ class AplicacionEduIA(ctk.CTk):
 
     def nuevo_chat(self):
         self.cancelar_animacion()
+        self.busqueda_internet_activa = False
+        self.token_busqueda_internet = None
         self.contexto_conversacion = (
             crear_contexto_conversacional()
         )
@@ -1091,6 +1219,8 @@ class AplicacionEduIA(ctk.CTk):
 
     def cerrar_sesion(self):
         self.cancelar_animacion()
+        self.busqueda_internet_activa = False
+        self.token_busqueda_internet = None
         self.contexto_conversacion = (
             crear_contexto_conversacional()
         )

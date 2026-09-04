@@ -17,6 +17,11 @@ from base_datos import (
     guardar_consulta_historial,
 )
 from academico import responder_consulta_academica
+from internet import (
+    ErrorConsultaInternet,
+    buscar_en_wikipedia,
+    formatear_resultado,
+)
 
 datos_entrenamiento = [
     # Saludos
@@ -3558,6 +3563,117 @@ def construir_respuesta_avisos(pregunta, matricula):
         )
 
     return "\n".join(lineas)
+
+
+PREFIJOS_BUSQUEDA_INTERNET = (
+    "busca en internet",
+    "busca en wikipedia",
+    "buscar en internet",
+    "buscar en wikipedia",
+    "busca informacion sobre",
+    "buscar informacion sobre",
+    "investiga en internet",
+    "investiga en wikipedia",
+    "investigar en internet",
+    "investigar en wikipedia",
+    "investiga sobre",
+    "investigar sobre",
+    "consulta en internet",
+    "consulta en wikipedia",
+    "consultar en internet",
+    "consultar en wikipedia",
+    "dame informacion de wikipedia sobre",
+)
+
+
+def es_consulta_internet(pregunta):
+    texto = normalizar_texto(
+        str(pregunta)
+    ).strip()
+
+    return any(
+        texto == prefijo
+        or texto.startswith(f"{prefijo} ")
+        for prefijo in PREFIJOS_BUSQUEDA_INTERNET
+    )
+
+
+def extraer_tema_busqueda(pregunta):
+    texto = normalizar_texto(
+        str(pregunta)
+    ).strip()
+
+    for prefijo in sorted(
+        PREFIJOS_BUSQUEDA_INTERNET,
+        key=len,
+        reverse=True,
+    ):
+        if (
+            texto == prefijo
+            or texto.startswith(f"{prefijo} ")
+        ):
+            texto = texto[len(prefijo):].strip()
+            break
+
+    prefijos_tema = (
+        "que es ",
+        "quien es ",
+        "que son ",
+        "sobre ",
+        "acerca de ",
+    )
+
+    for prefijo in prefijos_tema:
+        if texto.startswith(prefijo):
+            texto = texto[len(prefijo):].strip()
+            break
+
+    return texto.strip(" ¿?¡!.,;:")
+
+
+def procesar_consulta_internet(
+    pregunta,
+    estudiante,
+    contexto=None,
+):
+    tema = extraer_tema_busqueda(pregunta)
+    tipo = "externa"
+    categoria = "internet"
+
+    try:
+        resultado = buscar_en_wikipedia(tema)
+        respuesta = formatear_resultado(resultado)
+        confianza = 1.0
+
+        if contexto is not None:
+            contexto["ultima_categoria"] = categoria
+            contexto["ultimo_tema"] = resultado["titulo"]
+            contexto["ultima_intencion"] = "busqueda"
+            contexto["ultima_pregunta"] = pregunta
+
+    except ErrorConsultaInternet as error:
+        respuesta = str(error)
+        confianza = 0.0
+
+        if contexto is not None:
+            contexto["ultima_pregunta"] = pregunta
+
+    historial_id = guardar_consulta_historial(
+        estudiante["matricula"],
+        pregunta,
+        respuesta,
+        tipo,
+        categoria,
+        confianza,
+    )
+
+    return (
+        respuesta,
+        tipo,
+        categoria,
+        confianza,
+        historial_id,
+    )
 
 
 def crear_contexto_conversacional():
