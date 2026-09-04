@@ -6,6 +6,7 @@ from PIL import Image
 import customtkinter as ctk
 
 from microfono import escuchar_consulta
+from voz import hablar
 
 
 from eduia import (
@@ -75,6 +76,9 @@ class AplicacionEduIA(ctk.CTk):
         self.animacion_id = None
         self.boton_microfono = None
         self.escuchando = False
+        self.voz_activada = ctk.BooleanVar(
+            value=True
+        )
         self.contexto_conversacion = (
             crear_contexto_conversacional()
         )
@@ -330,14 +334,6 @@ class AplicacionEduIA(ctk.CTk):
                 "¿Cuál es mi horario?",
             ),
             (
-                "Mis materias",
-                "¿Cuáles son mis materias?",
-            ),
-            (
-                "Mis profesores",
-                "¿Quiénes son mis profesores?",
-            ),
-            (
                 "Mis calificaciones",
                 "¿Cuáles son mis calificaciones?",
             ),
@@ -370,6 +366,22 @@ class AplicacionEduIA(ctk.CTk):
                 padx=25,
                 pady=4,
             )
+
+        ctk.CTkSwitch(
+            barra_lateral,
+            text="Respuestas por voz",
+            variable=self.voz_activada,
+            onvalue=True,
+            offvalue=False,
+            progress_color=COLOR_VERDE_PRINCIPAL,
+            button_color=COLOR_VERDE_OSCURO,
+            button_hover_color=COLOR_VERDE_PRINCIPAL,
+            text_color=COLOR_VERDE_OSCURO,
+            font=ctk.CTkFont(size=13),
+        ).pack(
+            padx=25,
+            pady=(18, 10),
+        )
 
         ctk.CTkButton(
             barra_lateral,
@@ -858,6 +870,14 @@ class AplicacionEduIA(ctk.CTk):
             respuesta,
             animar=True,
         )
+
+        if self.voz_activada.get():
+            hilo_voz = threading.Thread(
+                target=hablar,
+                args=(respuesta,),
+                daemon=True,
+            )
+            hilo_voz.start()
 
         self.agregar_metadatos_respuesta(
             tipo,
