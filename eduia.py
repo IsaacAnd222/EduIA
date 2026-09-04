@@ -3559,13 +3559,282 @@ def construir_respuesta_avisos(pregunta, matricula):
 
     return "\n".join(lineas)
 
-def procesar_consulta(pregunta, estudiante):
-    respuesta, tipo, categoria, confianza = (
-        buscar_respuesta(pregunta)
+
+def crear_contexto_conversacional():
+    return {
+        "ultima_categoria": None,
+        "ultimo_tema": None,
+        "ultima_intencion": None,
+        "ultima_pregunta": None,
+    }
+
+
+def extraer_tema_contextual(pregunta):
+    texto = normalizar_texto(pregunta)
+
+    temas = (
+        "seminario de titulacion",
+        "torta con queso",
+        "bebida energetica",
+        "mantenimiento",
+        "talleres",
+        "taller",
+        "practica integradora",
+        "feria de emprendimiento",
+        "orientacion",
+        "quesadilla",
+        "torta",
+        "taco",
+        "wifi",
+        "prestamo",
+        "renovacion",
+        "tesis",
+        "ceneval",
+        "cedula profesional",
+        "bata",
+        "seguridad",
     )
+
+    for tema in temas:
+        if tema in texto:
+            return tema
+
+    materia = identificar_materia(pregunta)
+
+    if materia is not None:
+        return materia["nombre"]
+
+    return None
+
+
+def extraer_intencion_contextual(pregunta):
+    texto = normalizar_texto(pregunta)
+
+    intenciones = (
+        (("cuanto cuesta", "precio", "vale"), "precio"),
+        (("a que hora", "hasta que hora", "horario"), "horario"),
+        (("cuando", "fecha", "que dia"), "fecha"),
+        (("donde", "ubicacion", "ubicado"), "ubicacion"),
+        (("quien", "contacto", "correo", "telefono"), "contacto"),
+        (("reserv", "apart"), "reservacion"),
+        (("requisito", "necesito", "debo llevar"), "requisitos"),
+    )
+
+    for palabras, intencion in intenciones:
+        if any(palabra in texto for palabra in palabras):
+            return intencion
+
+    return None
+
+
+def resolver_pregunta_con_contexto(pregunta, contexto):
+    if not contexto:
+        return pregunta, None
+
+    categoria_anterior = contexto.get(
+        "ultima_categoria"
+    )
+
+    if categoria_anterior in {
+        None,
+        "saludo",
+        "capacidades",
+        "desconocida",
+    }:
+        return pregunta, None
+
+    texto = normalizar_texto(pregunta).strip()
+    texto = re.sub(r"^[^\w]+", "", texto)
+
+    frases_seguimiento = (
+        "a que hora",
+        "hasta que hora",
+        "cuanto cuesta",
+        "cuando es",
+        "donde esta",
+        "donde se encuentra",
+        "quien lo",
+        "quien la",
+        "como lo",
+        "como la",
+        "puedo hacerlo",
+        "puedo usarlo",
+        "puedo utilizarlo",
+    )
+
+    es_seguimiento = (
+        texto.startswith("y ")
+        or texto.startswith("tambien ")
+        or any(
+            frase in texto
+            for frase in frases_seguimiento
+        )
+        or bool(
+            re.search(
+                r"\b(ahi|alli|eso|ese|esa|esto|este|esta|lo)\b",
+                texto,
+            )
+        )
+    )
+
+    if not es_seguimiento:
+        return pregunta, None
+
+    categoria_mencionada = identificar_categoria_prioritaria(
+        pregunta
+    )
+
+    if (
+        categoria_mencionada is not None
+        and categoria_mencionada != "horario"
+        and categoria_mencionada != categoria_anterior
+    ):
+        return pregunta, None
+
+    etiquetas_categoria = {
+        "horario": "horario de clases",
+        "materia": "materias",
+        "examen": "examen",
+        "profesor": "profesor",
+        "calificacion": "calificaciones",
+        "aviso": "aviso escolar",
+        "academica": "tema academico",
+        "inscripcion": "inscripcion",
+        "biblioteca": "biblioteca",
+        "beca": "beca",
+        "titulacion": "titulacion",
+        "laboratorio": "laboratorio",
+        "cafeteria": "cafeteria",
+    }
+
+    etiqueta = etiquetas_categoria.get(
+        categoria_anterior,
+        categoria_anterior,
+    )
+    tema_actual = extraer_tema_contextual(pregunta)
+    tema = tema_actual or contexto.get("ultimo_tema")
+    intencion_actual = extraer_intencion_contextual(
+        pregunta
+    )
+    intencion = (
+        intencion_actual
+        or contexto.get("ultima_intencion")
+    )
+
+    etiquetas_intencion = {
+        "precio": "cuanto cuesta",
+        "horario": "horario",
+        "fecha": "fecha",
+        "ubicacion": "ubicacion",
+        "contacto": "contacto",
+        "reservacion": "reservacion",
+        "requisitos": "requisitos",
+    }
+
+    partes = [pregunta, etiqueta]
+
+    if tema is not None and tema_actual is None:
+        partes.append(tema)
+
+    etiqueta_intencion = etiquetas_intencion.get(intencion)
+
+    if (
+        etiqueta_intencion is not None
+        and intencion_actual is None
+    ):
+        partes.append(etiqueta_intencion)
+
+    return " ".join(partes), categoria_anterior
+
+
+def actualizar_contexto_conversacional(
+    contexto,
+    categoria,
+    pregunta_original,
+    pregunta_procesada,
+):
+    if contexto is None:
+        return
+
+    if categoria not in {
+        "saludo",
+        "capacidades",
+        "desconocida",
+    }:
+        contexto["ultima_categoria"] = categoria
+
+        tema = extraer_tema_contextual(
+            pregunta_procesada
+        )
+
+        if tema is not None:
+            contexto["ultimo_tema"] = tema
+        else:
+            contexto["ultimo_tema"] = None
+
+        intencion = extraer_intencion_contextual(
+            pregunta_procesada
+        )
+
+        if intencion is not None:
+            contexto["ultima_intencion"] = intencion
+        else:
+            contexto["ultima_intencion"] = None
+
+    contexto["ultima_pregunta"] = pregunta_original
+
+
+def procesar_consulta(
+    pregunta,
+    estudiante,
+    contexto=None,
+):
+    (
+        pregunta_procesada,
+        categoria_contextual,
+    ) = resolver_pregunta_con_contexto(
+        pregunta,
+        contexto,
+    )
+
+    respuesta, tipo, categoria, confianza = (
+        buscar_respuesta(pregunta_procesada)
+    )
+
+    if categoria_contextual is not None:
+        categoria = categoria_contextual
+        tipo = TIPOS_CATEGORIA[categoria]
+        confianza = max(0.60, confianza)
+        respuesta = RESPUESTAS_CATEGORIA[categoria]
+
+        if categoria == "inscripcion":
+            respuesta = construir_respuesta_inscripcion(
+                pregunta_procesada
+            )
+        elif categoria == "biblioteca":
+            respuesta = construir_respuesta_biblioteca(
+                pregunta_procesada
+            )
+        elif categoria == "beca":
+            respuesta = construir_respuesta_beca(
+                pregunta_procesada
+            )
+        elif categoria == "titulacion":
+            respuesta = construir_respuesta_titulacion(
+                pregunta_procesada
+            )
+        elif categoria == "laboratorio":
+            respuesta = construir_respuesta_laboratorio(
+                pregunta_procesada
+            )
+        elif categoria == "cafeteria":
+            respuesta = construir_respuesta_cafeteria(
+                pregunta_procesada
+            )
+
     if categoria == "horario":
         materia_identificada = identificar_materia(
-            pregunta
+            pregunta_procesada
         )
 
         if (
@@ -3602,7 +3871,7 @@ def procesar_consulta(pregunta, estudiante):
 
     elif categoria == "profesor":
         materia_identificada = identificar_materia(
-            pregunta
+            pregunta_procesada
         )
 
         if (
@@ -3634,7 +3903,7 @@ def procesar_consulta(pregunta, estudiante):
             
     elif categoria == "calificacion":
         materia_identificada = identificar_materia(
-            pregunta
+            pregunta_procesada
         )
 
         if (
@@ -3668,7 +3937,7 @@ def procesar_consulta(pregunta, estudiante):
 
     elif categoria == "examen":
         materia_identificada = identificar_materia(
-            pregunta
+            pregunta_procesada
         )
 
         if (
@@ -3700,7 +3969,7 @@ def procesar_consulta(pregunta, estudiante):
 
     elif categoria == "aviso":
         respuesta = construir_respuesta_avisos(
-            pregunta,
+            pregunta_procesada,
             estudiante["matricula"]
         )
 
@@ -3710,7 +3979,7 @@ def procesar_consulta(pregunta, estudiante):
             confianza_tema,
             tema_academico,
         ) = responder_consulta_academica(
-            pregunta,
+            pregunta_procesada,
             estudiante["semestre"],
         )
 
@@ -3726,6 +3995,13 @@ def procesar_consulta(pregunta, estudiante):
             f"\nConfianza del tema académico: "
             f"{confianza_tema:.0%}"
         )
+
+    actualizar_contexto_conversacional(
+        contexto,
+        categoria,
+        pregunta,
+        pregunta_procesada,
+    )
 
     historial_id = guardar_consulta_historial(
         estudiante["matricula"],

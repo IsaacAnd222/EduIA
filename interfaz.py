@@ -4,7 +4,10 @@ from PIL import Image
 import customtkinter as ctk
 
 
-from eduia import procesar_consulta
+from eduia import (
+    crear_contexto_conversacional,
+    procesar_consulta,
+)
 from base_datos import (
     buscar_estudiante,
     guardar_retroalimentacion,
@@ -66,6 +69,9 @@ class AplicacionEduIA(ctk.CTk):
         self.contenedor_mensajes = None
         self.entrada_consulta = None
         self.animacion_id = None
+        self.contexto_conversacion = (
+            crear_contexto_conversacional()
+        )
 
         self.mostrar_acceso()
 
@@ -731,6 +737,7 @@ class AplicacionEduIA(ctk.CTk):
         ) = procesar_consulta(
             consulta,
             self.estudiante_actual,
+            self.contexto_conversacion,
         )
 
         self.agregar_mensaje(
@@ -925,6 +932,9 @@ class AplicacionEduIA(ctk.CTk):
 
     def nuevo_chat(self):
         self.cancelar_animacion()
+        self.contexto_conversacion = (
+            crear_contexto_conversacional()
+        )
         
         if self.contenedor_mensajes is None:
             return
@@ -948,5 +958,8 @@ class AplicacionEduIA(ctk.CTk):
 
     def cerrar_sesion(self):
         self.cancelar_animacion()
+        self.contexto_conversacion = (
+            crear_contexto_conversacional()
+        )
         self.estudiante_actual = None
         self.mostrar_acceso()
