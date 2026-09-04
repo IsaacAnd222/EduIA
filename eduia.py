@@ -22,6 +22,11 @@ from internet import (
     buscar_en_wikipedia,
     formatear_resultado,
 )
+from clima import (
+    ErrorConsultaClima,
+    consultar_clima,
+    formatear_resultado_clima,
+)
 
 datos_entrenamiento = [
     # Saludos
@@ -3652,6 +3657,128 @@ def procesar_consulta_internet(
             contexto["ultima_pregunta"] = pregunta
 
     except ErrorConsultaInternet as error:
+        respuesta = str(error)
+        confianza = 0.0
+
+        if contexto is not None:
+            contexto["ultima_pregunta"] = pregunta
+
+    historial_id = guardar_consulta_historial(
+        estudiante["matricula"],
+        pregunta,
+        respuesta,
+        tipo,
+        categoria,
+        confianza,
+    )
+
+    return (
+        respuesta,
+        tipo,
+        categoria,
+        confianza,
+        historial_id,
+    )
+
+
+PATRONES_CONSULTA_CLIMA = (
+    r"\bcomo (?:esta|estara) el clima\b",
+    r"\bque clima\b",
+    r"\bclima (?:actual|hoy|manana|en|de|para)\b",
+    r"\bpronostico\b",
+    r"\btemperatura (?:actual|hoy|manana|en|de|para)\b",
+    r"\btemperatura\b.*\b(?:hoy|manana|en|de|para)\b",
+    r"\b(?:llovera|llueve)\b",
+    r"\bva a llover\b",
+    r"\bhabra lluvia\b",
+    r"\bprobabilidad de lluvia\b",
+)
+
+
+def es_consulta_clima(pregunta):
+    texto = normalizar_texto(
+        str(pregunta)
+    ).strip()
+
+    return any(
+        re.search(patron, texto)
+        for patron in PATRONES_CONSULTA_CLIMA
+    )
+
+
+def extraer_ubicacion_clima(
+    pregunta,
+    ubicacion_predeterminada="Irapuato",
+):
+    texto = str(pregunta).strip(" ¿?¡!.,;:")
+
+    coincidencias = re.findall(
+        r"\ben\s+(.+)$",
+        texto,
+        flags=re.IGNORECASE,
+    )
+
+    if coincidencias:
+        ubicacion = coincidencias[-1]
+    else:
+        coincidencia = re.search(
+            (
+                r"\b(?:clima|pron[oó]stico|temperatura)"
+                r"\s+(?:de|para)\s+(.+)$"
+            ),
+            texto,
+            flags=re.IGNORECASE,
+        )
+        ubicacion = (
+            coincidencia.group(1)
+            if coincidencia
+            else ""
+        )
+
+    ubicacion = re.sub(
+        r"\s+(?:hoy|mañana|pasado mañana)$",
+        "",
+        ubicacion,
+        flags=re.IGNORECASE,
+    ).strip(" ¿?¡!.,;:")
+
+    if normalizar_texto(ubicacion) in {
+        "",
+        "hoy",
+        "manana",
+        "pasado manana",
+    }:
+        return ubicacion_predeterminada
+
+    return ubicacion
+
+
+def procesar_consulta_clima(
+    pregunta,
+    estudiante,
+    contexto=None,
+):
+    ubicacion = extraer_ubicacion_clima(pregunta)
+    tipo = "externa"
+    categoria = "clima"
+
+    try:
+        resultado = consultar_clima(
+            ubicacion,
+            dias=3,
+        )
+        respuesta = formatear_resultado_clima(
+            resultado
+        )
+        confianza = 1.0
+
+        if contexto is not None:
+            contexto["ultima_categoria"] = categoria
+            contexto["ultimo_tema"] = ubicacion
+            contexto["ultima_intencion"] = "clima"
+            contexto["ultima_pregunta"] = pregunta
+
+    except ErrorConsultaClima as error:
         respuesta = str(error)
         confianza = 0.0
 

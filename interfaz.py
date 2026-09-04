@@ -11,8 +11,10 @@ from voz import hablar
 
 from eduia import (
     crear_contexto_conversacional,
+    es_consulta_clima,
     es_consulta_internet,
     procesar_consulta,
+    procesar_consulta_clima,
     procesar_consulta_internet,
 )
 from base_datos import (
@@ -80,6 +82,8 @@ class AplicacionEduIA(ctk.CTk):
         self.escuchando = False
         self.busqueda_internet_activa = False
         self.token_busqueda_internet = None
+        self.consulta_clima_activa = False
+        self.token_consulta_clima = None
         self.voz_activada = ctk.BooleanVar(
             value=True
         )
@@ -926,6 +930,113 @@ class AplicacionEduIA(ctk.CTk):
                 historial_id
             )
 
+    def iniciar_consulta_clima(self, consulta):
+        self.consulta_clima_activa = True
+        token = object()
+        self.token_consulta_clima = token
+
+        etiqueta_estado = self.agregar_mensaje(
+            "EduIA",
+            "Consultando el clima...",
+        )
+
+        hilo = threading.Thread(
+            target=self.ejecutar_consulta_clima,
+            args=(
+                consulta,
+                dict(self.estudiante_actual),
+                self.contexto_conversacion,
+                etiqueta_estado,
+                token,
+            ),
+            daemon=True,
+        )
+        hilo.start()
+
+    def ejecutar_consulta_clima(
+        self,
+        consulta,
+        estudiante,
+        contexto,
+        etiqueta_estado,
+        token,
+    ):
+        try:
+            resultado = procesar_consulta_clima(
+                consulta,
+                estudiante,
+                contexto,
+            )
+        except Exception:
+            resultado = (
+                "Ocurrió un problema inesperado al consultar el clima.",
+                "externa",
+                "clima",
+                0.0,
+                None,
+            )
+
+        self.after(
+            0,
+            lambda: self.finalizar_consulta_clima(
+                resultado,
+                etiqueta_estado,
+                token,
+            ),
+        )
+
+    def finalizar_consulta_clima(
+        self,
+        resultado,
+        etiqueta_estado,
+        token,
+    ):
+        if token is not self.token_consulta_clima:
+            return
+
+        self.consulta_clima_activa = False
+        self.token_consulta_clima = None
+
+        if not etiqueta_estado.winfo_exists():
+            return
+
+        (
+            respuesta,
+            tipo,
+            categoria,
+            confianza,
+            historial_id,
+        ) = resultado
+
+        etiqueta_estado.configure(
+            text=respuesta
+        )
+        self.desplazar_al_final()
+
+        if self.voz_activada.get():
+            respuesta_hablada = respuesta.split(
+                "\n\nFuente: Open-Meteo",
+                1,
+            )[0]
+
+            hilo_voz = threading.Thread(
+                target=hablar,
+                args=(respuesta_hablada,),
+                daemon=True,
+            )
+            hilo_voz.start()
+
+        self.agregar_metadatos_respuesta(
+            tipo,
+            categoria,
+            confianza,
+        )
+
+        if historial_id is not None:
+            self.agregar_opciones_retroalimentacion(
+                historial_id
+            )
+
     def enviar_consulta_rapida(self, consulta):
         if self.entrada_consulta is None:
             return
@@ -960,10 +1071,13 @@ class AplicacionEduIA(ctk.CTk):
             self.cerrar_sesion()
             return
 
-        if self.busqueda_internet_activa:
+        if (
+            self.busqueda_internet_activa
+            or self.consulta_clima_activa
+        ):
             self.agregar_mensaje(
                 "EduIA",
-                "Espera a que termine la búsqueda actual.",
+                "Espera a que termine la consulta actual.",
             )
             return
 
@@ -975,6 +1089,12 @@ class AplicacionEduIA(ctk.CTk):
 
         if es_consulta_internet(consulta):
             self.iniciar_busqueda_internet(
+                consulta
+            )
+            return
+
+        if es_consulta_clima(consulta):
+            self.iniciar_consulta_clima(
                 consulta
             )
             return
@@ -1193,6 +1313,8 @@ class AplicacionEduIA(ctk.CTk):
         self.cancelar_animacion()
         self.busqueda_internet_activa = False
         self.token_busqueda_internet = None
+        self.consulta_clima_activa = False
+        self.token_consulta_clima = None
         self.contexto_conversacion = (
             crear_contexto_conversacional()
         )
@@ -1221,6 +1343,8 @@ class AplicacionEduIA(ctk.CTk):
         self.cancelar_animacion()
         self.busqueda_internet_activa = False
         self.token_busqueda_internet = None
+        self.consulta_clima_activa = False
+        self.token_consulta_clima = None
         self.contexto_conversacion = (
             crear_contexto_conversacional()
         )
