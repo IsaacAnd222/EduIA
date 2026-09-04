@@ -1,7 +1,11 @@
 from datetime import datetime
 from pathlib import Path
+import threading
+
 from PIL import Image
 import customtkinter as ctk
+
+from microfono import escuchar_consulta
 
 
 from eduia import (
@@ -69,6 +73,8 @@ class AplicacionEduIA(ctk.CTk):
         self.contenedor_mensajes = None
         self.entrada_consulta = None
         self.animacion_id = None
+        self.boton_microfono = None
+        self.escuchando = False
         self.contexto_conversacion = (
             crear_contexto_conversacional()
         )
@@ -493,6 +499,22 @@ class AplicacionEduIA(ctk.CTk):
             self.enviar_consulta,
         )
 
+        self.boton_microfono = ctk.CTkButton(
+            area_entrada,
+            text="Hablar",
+            width=115,
+            height=50,
+            corner_radius=15,
+            fg_color=COLOR_VERDE_PRINCIPAL,
+            hover_color=COLOR_VERDE_OSCURO,
+            command=self.iniciar_escucha,
+        )
+        self.boton_microfono.grid(
+            row=0,
+            column=1,
+            padx=(0, 12),
+        )
+
         ctk.CTkButton(
             area_entrada,
             text="Enviar",
@@ -504,7 +526,7 @@ class AplicacionEduIA(ctk.CTk):
             command=self.enviar_consulta,
         ).grid(
             row=0,
-            column=1,
+            column=2,
         )
 
         self.nuevo_chat()
@@ -687,6 +709,97 @@ class AplicacionEduIA(ctk.CTk):
 
         self.after_cancel(self.animacion_id)
         self.animacion_id = None
+
+    def iniciar_escucha(self):
+        if self.escuchando:
+            return
+
+        self.escuchando = True
+
+        self.boton_microfono.configure(
+            text="Preparando...",
+            state="disabled",
+            fg_color="#D59A3A",
+        )
+
+        hilo = threading.Thread(
+            target=self.escuchar_en_segundo_plano,
+            daemon=True,
+        )
+        hilo.start()
+
+    def escuchar_en_segundo_plano(self):
+        try:
+            texto = escuchar_consulta(
+                al_escuchar=lambda: self.after(
+                    0,
+                    self.mostrar_escuchando,
+                ),
+                al_reconocer=lambda: self.after(
+                    0,
+                    self.mostrar_reconociendo,
+                ),
+            )
+
+            self.after(
+                0,
+                lambda: self.finalizar_escucha(
+                    texto=texto
+                ),
+            )
+
+        except RuntimeError as error:
+            mensaje = str(error)
+
+            self.after(
+                0,
+                lambda: self.finalizar_escucha(
+                    error=mensaje
+                ),
+            )
+
+    def mostrar_escuchando(self):
+        if self.boton_microfono is None:
+            return
+
+        self.boton_microfono.configure(
+            text="Escuchando...",
+            fg_color="#C85C5C",
+        )
+
+    def mostrar_reconociendo(self):
+        if self.boton_microfono is None:
+            return
+
+        self.boton_microfono.configure(
+            text="Reconociendo...",
+            fg_color="#4F86C6",
+        )
+        
+    def finalizar_escucha(
+        self,
+        texto=None,
+        error=None,
+    ):
+        self.escuchando = False
+
+        self.boton_microfono.configure(
+            text="Hablar",
+            state="normal",
+            fg_color=COLOR_VERDE_PRINCIPAL,
+            hover_color=COLOR_VERDE_OSCURO,
+        )
+
+        if error is not None:
+            self.agregar_mensaje(
+                "EduIA",
+                error,
+            )
+            return
+
+        self.entrada_consulta.delete(0, "end")
+        self.entrada_consulta.insert(0, texto)
+        self.enviar_consulta()
 
     def enviar_consulta_rapida(self, consulta):
         if self.entrada_consulta is None:
