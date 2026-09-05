@@ -1,12 +1,14 @@
 from datetime import datetime
 from pathlib import Path
 import threading
+import webbrowser
 
 from PIL import Image
 import customtkinter as ctk
 
 from microfono import escuchar_consulta
 from voz import hablar
+from enlaces import crear_acciones_enlaces
 
 
 from eduia import (
@@ -642,6 +644,54 @@ class AplicacionEduIA(ctk.CTk):
 
         return etiqueta_mensaje
 
+    def abrir_enlace(self, enlace):
+        """Abre un enlace externo cuando el usuario pulsa su botón."""
+        try:
+            return bool(webbrowser.open_new_tab(enlace))
+        except Exception:
+            return False
+
+    def agregar_botones_enlaces(self, etiqueta_mensaje, mensaje):
+        """Agrega botones clicables debajo de una respuesta externa."""
+        acciones = crear_acciones_enlaces(mensaje)
+
+        if not acciones or not etiqueta_mensaje.winfo_exists():
+            return
+
+        etiqueta_mensaje.pack_configure(pady=(0, 6))
+        contenedor = ctk.CTkFrame(
+            etiqueta_mensaje.master,
+            fg_color="transparent",
+        )
+        contenedor.pack(
+            fill="x",
+            padx=12,
+            pady=(0, 12),
+        )
+
+        for columna in range(2):
+            contenedor.grid_columnconfigure(columna, weight=1)
+
+        for indice, (texto_boton, enlace) in enumerate(acciones):
+            boton = ctk.CTkButton(
+                contenedor,
+                text=texto_boton,
+                height=30,
+                corner_radius=10,
+                fg_color=COLOR_VERDE_PRINCIPAL,
+                hover_color=COLOR_VERDE_OSCURO,
+                command=lambda url=enlace: self.abrir_enlace(url),
+            )
+            boton.grid(
+                row=indice // 2,
+                column=indice % 2,
+                sticky="ew",
+                padx=4,
+                pady=3,
+            )
+
+        self.after(10, self.desplazar_al_final)
+
     def agregar_metadatos_respuesta(
         self,
         tipo,
@@ -917,6 +967,7 @@ class AplicacionEduIA(ctk.CTk):
         etiqueta_estado.configure(
             text=respuesta
         )
+        self.agregar_botones_enlaces(etiqueta_estado, respuesta)
         self.desplazar_al_final()
 
         if self.voz_activada.get():
@@ -1024,6 +1075,7 @@ class AplicacionEduIA(ctk.CTk):
         etiqueta_estado.configure(
             text=respuesta
         )
+        self.agregar_botones_enlaces(etiqueta_estado, respuesta)
         self.desplazar_al_final()
 
         if self.voz_activada.get():
@@ -1131,6 +1183,7 @@ class AplicacionEduIA(ctk.CTk):
         etiqueta_estado.configure(
             text=respuesta
         )
+        self.agregar_botones_enlaces(etiqueta_estado, respuesta)
         self.desplazar_al_final()
 
         if self.voz_activada.get():
@@ -1245,6 +1298,7 @@ class AplicacionEduIA(ctk.CTk):
         ) = resultado
 
         etiqueta_estado.configure(text=respuesta)
+        self.agregar_botones_enlaces(etiqueta_estado, respuesta)
         self.desplazar_al_final()
 
         if self.voz_activada.get():
@@ -1346,6 +1400,7 @@ class AplicacionEduIA(ctk.CTk):
         ) = resultado
 
         etiqueta_estado.configure(text=respuesta)
+        self.agregar_botones_enlaces(etiqueta_estado, respuesta)
         self.desplazar_al_final()
 
         if self.voz_activada.get():

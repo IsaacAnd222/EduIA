@@ -385,6 +385,13 @@ def probar_formato():
     assert "openstreetmap.org/directions" in texto
 
 
+def probar_formato_de_duraciones_largas():
+    assert rutas.formatear_duracion(8.5) == "9 min"
+    assert rutas.formatear_duracion(60) == "1 h"
+    assert rutas.formatear_duracion(408) == "6 h 48 min"
+    assert rutas.formatear_duracion(564) == "9 h 24 min"
+
+
 def probar_limite_de_instrucciones():
     resultado, _ = ejecutar_consulta_simulada()
     resultado["instrucciones"] = [
@@ -431,6 +438,7 @@ PRUEBAS = [
     ("Exige origen y destino", probar_origen_y_destino_obligatorios),
     ("Controla errores al buscar lugares", probar_error_de_geocodificacion),
     ("Presenta distancia, duración e instrucciones", probar_formato),
+    ("Presenta naturalmente las duraciones largas", probar_formato_de_duraciones_largas),
     ("Limita las instrucciones mostradas", probar_limite_de_instrucciones),
     ("Muestra errores desde el programa principal", probar_programa_principal_con_error),
 ]

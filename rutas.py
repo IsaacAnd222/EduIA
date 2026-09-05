@@ -389,6 +389,29 @@ def _formatear_distancia_paso(distancia_m):
     return f"{distancia_m:.0f} m"
 
 
+def formatear_duracion(duracion_min):
+    minutos = max(
+        1,
+        int(
+            _numero_no_negativo(
+                duracion_min,
+                "duración",
+            )
+            + 0.5
+        ),
+    )
+
+    if minutos < 60:
+        return f"{minutos} min"
+
+    horas, minutos_restantes = divmod(minutos, 60)
+
+    if minutos_restantes == 0:
+        return f"{horas} h"
+
+    return f"{horas} h {minutos_restantes} min"
+
+
 def formatear_resultado_ruta(resultado):
     if not isinstance(resultado, dict):
         raise ErrorConsultaRuta(
@@ -423,7 +446,7 @@ def formatear_resultado_ruta(resultado):
         f"Distancia por carretera: {distancia_km:.1f} km",
         (
             "Duración aproximada: "
-            f"{max(1, int(duracion_min + 0.5))} min"
+            f"{formatear_duracion(duracion_min)}"
         ),
     ]
     instrucciones = resultado.get("instrucciones", [])

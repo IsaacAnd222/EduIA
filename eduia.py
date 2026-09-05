@@ -37,6 +37,7 @@ from rutas import (
     ErrorConsultaRuta,
     calcular_ruta,
     consultar_ruta_coordenadas,
+    formatear_duracion,
     formatear_resultado_ruta,
 )
 from cercanos import (
@@ -4388,6 +4389,7 @@ def procesar_consulta_ruta(
     origen, destino = extraer_lugares_ruta(pregunta)
     origen_contextual = None
     destino_contextual = None
+    respuesta_contextual_breve = False
 
     if contexto is not None and (not origen or not destino):
         lugar_referido = resolver_lugar_externo_contextual(
@@ -4416,6 +4418,7 @@ def procesar_consulta_ruta(
                 destino_contextual = contexto["ultima_ruta"]["destino"]
                 origen = origen_contextual["nombre"]
                 destino = destino_contextual["nombre"]
+                respuesta_contextual_breve = True
     tipo = "externa"
     categoria = "ruta"
 
@@ -4432,7 +4435,19 @@ def procesar_consulta_ruta(
             )
         else:
             resultado = calcular_ruta(origen, destino)
-        respuesta = formatear_resultado_ruta(resultado)
+        if respuesta_contextual_breve:
+            respuesta = (
+                f"De {resultado['origen']['nombre']} a "
+                f"{resultado['destino']['nombre']} tardarías "
+                f"aproximadamente "
+                f"{formatear_duracion(resultado['duracion_min'])}, "
+                f"recorriendo {resultado['distancia_km']:.1f} km "
+                "por carretera.\n\n"
+                f"Fuente: {resultado['fuente']}\n"
+                f"{resultado['enlace']}"
+            )
+        else:
+            respuesta = formatear_resultado_ruta(resultado)
         confianza = 1.0
 
         if contexto is not None:

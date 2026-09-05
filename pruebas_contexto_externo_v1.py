@@ -190,7 +190,7 @@ def probar_continuacion_de_ultima_ruta():
         patch.object(
             eduia,
             "formatear_resultado_ruta",
-            return_value="Duración aproximada: 6 min",
+            return_value="Respuesta completa que no debe utilizarse",
         ),
         patch.object(
             eduia,
@@ -205,7 +205,10 @@ def probar_continuacion_de_ultima_ruta():
         )
 
     consultar.assert_called_once()
-    assert resultado[0] == "Duración aproximada: 6 min"
+    assert resultado[0].startswith(
+        "De Instituto Irapuato a ISSSTE tardarías aproximadamente 6 min"
+    ), resultado[0]
+    assert "recorriendo 2.5 km por carretera" in resultado[0], resultado[0]
 
 
 def probar_ubicacion_del_segundo_resultado():

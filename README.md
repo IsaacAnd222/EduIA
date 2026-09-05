@@ -1,39 +1,59 @@
 # EduIA
 
-EduIA es un asistente virtual universitario de escritorio desarrollado en Python. Permite que un estudiante inicie sesión con su matrícula y consulte información académica mediante texto o voz desde una interfaz de conversación.
+EduIA es un asistente virtual universitario de escritorio desarrollado en Python. Permite que cada estudiante inicie sesión con su matrícula y consulte información académica o servicios externos mediante texto y voz desde una interfaz conversacional.
 
-El proyecto trabaja con información escolar simulada almacenada localmente en SQLite y utiliza clasificación de texto para identificar la intención de cada consulta.
+La información escolar simulada se almacena localmente en SQLite. Para las consultas externas, EduIA integra Wikipedia, Open-Meteo y los servicios abiertos de OpenStreetMap sin requerir tarjetas ni claves privadas.
 
 ## Funciones principales
 
 - Inicio y cierre de sesión mediante matrícula.
 - Consultas personalizadas de materias, horarios, profesores, calificaciones y exámenes.
 - Información sobre inscripción, becas, titulación, biblioteca, cafetería y laboratorios.
-- Avisos generales y avisos correspondientes al semestre del estudiante.
+- Avisos generales y correspondientes al semestre del estudiante.
 - Tolerancia a variaciones naturales y errores ortográficos.
-- Respuesta segura ante preguntas ambiguas o desconocidas.
-- Memoria conversacional durante el chat actual.
+- Memoria conversacional para preguntas de seguimiento.
 - Historial de consultas y registro de retroalimentación.
-- Consultas mediante micrófono.
-- Respuestas habladas opcionales.
+- Consultas mediante micrófono y respuestas habladas opcionales.
+- Búsquedas explícitas de información general en Wikipedia.
+- Clima actual y pronóstico mediante Open-Meteo.
+- Ubicaciones y coordenadas mediante OpenStreetMap.
+- Distancias, duración e indicaciones por carretera mediante OSRM.
+- Hospitales, farmacias, cafeterías, restaurantes, bancos y otros lugares cercanos mediante Overpass.
+- Botones para abrir fuentes, lugares y rutas en el navegador.
 
-## Memoria conversacional
+## Contexto entre servicios
 
-EduIA conserva temporalmente el tema y la intención de la conversación. Esto permite formular preguntas de seguimiento como:
+EduIA conserva temporalmente los resultados externos para resolver referencias naturales:
 
 ```text
-Estudiante: ¿Dónde está la biblioteca?
-EduIA: El Instituto Irapuato cuenta con dos espacios de biblioteca...
+Estudiante: Busca hospitales cerca del Instituto Irapuato.
+EduIA: 1. ISSSTE... 2. IMSS...
 
-Estudiante: ¿A qué hora abre?
-EduIA: Horario de Biblioteca...
+Estudiante: ¿Cómo llego al primero?
+EduIA: Ruta del Instituto Irapuato al ISSSTE...
+
+Estudiante: ¿Cuánto tiempo tardaría?
+EduIA: De Instituto Irapuato a ISSSTE tardarías aproximadamente 6 min...
+
+Estudiante: ¿Cómo está el clima ahí?
+EduIA: Clima en ISSSTE...
 ```
 
-El contexto se reinicia al seleccionar **Nuevo chat** o **Cerrar sesión**. Una pregunta que cambia explícitamente de tema no queda forzada al contexto anterior.
+Las referencias como `primero`, `segundo`, `último`, `ahí` y `ese lugar` utilizan las coordenadas exactas del resultado seleccionado. El contexto se reinicia al elegir **Nuevo chat** o **Cerrar sesión**, y no se impone cuando el estudiante cambia claramente de tema.
+
+## Servicios externos
+
+| Función | Servicio | Resultado |
+|---|---|---|
+| Información general | Wikipedia | Resumen y fuente |
+| Clima | Open-Meteo | Condiciones actuales y pronóstico |
+| Ubicaciones | Nominatim / OpenStreetMap | Nombre, dirección y coordenadas |
+| Rutas | OSRM / OpenStreetMap | Distancia vial, duración e indicaciones |
+| Lugares cercanos | Overpass / OpenStreetMap | Lugares ordenados por distancia lineal |
+
+Las distancias mostradas en una búsqueda de lugares cercanos son aproximaciones en línea recta. Cuando se solicita cómo llegar, OSRM calcula la distancia por calles y carreteras; por eso ambas cifras pueden ser diferentes.
 
 ## Funciones de voz
-
-### Reconocimiento de consultas
 
 El botón **Hablar** presenta cuatro estados:
 
@@ -41,75 +61,54 @@ El botón **Hablar** presenta cuatro estados:
 Hablar → Preparando... → Escuchando... → Reconociendo...
 ```
 
-Cuando el reconocimiento termina correctamente, la consulta se envía automáticamente. La interfaz permanece disponible porque la captura se ejecuta en un hilo secundario.
+Al terminar el reconocimiento, la consulta se envía automáticamente. Si no se entiende audio —por ejemplo, debido a una pausa larga o silencio— EduIA lo informa sin bloquear la conversación.
 
-El reconocimiento utiliza SpeechRecognition con el servicio de Google configurado para español de México (`es-MX`). Esta función necesita conexión a Internet.
-
-### Respuestas habladas
-
-El interruptor **Respuestas por voz** permite activar o desactivar la lectura de las respuestas.
-
+- Reconocimiento: SpeechRecognition, configurado en español de México (`es-MX`).
 - Voz principal: `es-MX-JorgeNeural`, mediante Edge TTS.
 - Respaldo sin conexión: primera voz local disponible mediante pyttsx3.
 - Reproducción: pygame.
-- Los archivos MP3 se crean en la carpeta temporal de Windows y se eliminan automáticamente después de reproducirse.
-- Si la voz falla, la respuesta escrita continúa disponible.
-
-Edge TTS necesita Internet. El respaldo de pyttsx3 utiliza las voces instaladas localmente en Windows.
+- Los MP3 temporales se eliminan después de reproducirse.
 
 ## Tecnologías
 
 - Python 3.13
-- CustomTkinter
+- CustomTkinter y Pillow
 - SQLite
 - scikit-learn
-- Pillow
-- SpeechRecognition
-- PyAudio
-- Edge TTS
-- pyttsx3
-- pygame
+- SpeechRecognition y PyAudio
+- Edge TTS, pyttsx3 y pygame
+- Wikipedia, Open-Meteo, Nominatim, OSRM y Overpass API
 
 ## Estructura principal
 
 ```text
 EduIA/
-├── assets/                 Recursos gráficos
-├── data/                   Base de datos SQLite
-├── reportes/               Reportes generados
-├── academico.py            Operaciones académicas
-├── base_datos.py           Creación y acceso a SQLite
-├── eduia.py                Clasificación y procesamiento
-├── interfaz.py             Interfaz gráfica y conversación
-├── main.py                 Punto de entrada
-├── microfono.py            Reconocimiento de voz
-├── voz.py                  Síntesis y reproducción de voz
-└── requirements.txt        Dependencias
+├── assets/                         Recursos gráficos
+├── data/                           Base de datos SQLite
+├── reportes/                       Reportes generados
+├── academico.py                    Operaciones académicas
+├── base_datos.py                   Creación y acceso a SQLite
+├── internet.py                     Consultas en Wikipedia
+├── clima.py                        Clima y pronóstico
+├── ubicaciones.py                  Geocodificación de lugares
+├── rutas.py                        Rutas y distancias por carretera
+├── cercanos.py                     Lugares cercanos
+├── enlaces.py                      Acciones para fuentes y rutas
+├── eduia.py                        Clasificación, contexto y procesamiento
+├── interfaz.py                     Interfaz gráfica y conversación
+├── ejecutar_todas_las_pruebas.py   Ejecutor de la validación completa
+├── main.py                         Punto de entrada
+├── microfono.py                    Reconocimiento de voz
+├── voz.py                          Síntesis y reproducción de voz
+└── requirements.txt                Dependencias
 ```
 
 ## Instalación en Windows
 
-### 1. Crear el entorno virtual
-
 ```powershell
 python -m venv .venv
-```
-
-### 2. Permitir temporalmente la activación
-
-```powershell
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned
-```
-
-### 3. Activar el entorno
-
-```powershell
 & .\.venv\Scripts\Activate.ps1
-```
-
-### 4. Instalar las dependencias
-
-```powershell
 python -m pip install -r requirements.txt
 ```
 
@@ -121,44 +120,26 @@ Con el entorno virtual activado:
 python main.py
 ```
 
-La aplicación solicitará una matrícula registrada antes de abrir el asistente académico.
-
 ## Pruebas
 
-Las baterías existentes validan consultas naturales, ortográficas, ambiguas, desconocidas y dependientes del contexto:
+La validación completa se ejecuta con un solo comando:
 
 ```powershell
-python pruebas_actividad4.py
-python pruebas_validacion.py
-python pruebas_finales.py
-python pruebas_independientes_nuevas.py
-python pruebas_ineditas_v2.py
-python pruebas_contexto_v1.py
-python pruebas_voz.py
+python ejecutar_todas_las_pruebas.py
 ```
 
-Resultados de la validación:
+El ejecutor recorre 19 baterías, muestra el resultado de cada una y calcula tanto los archivos correctos como los casos individuales comprobados. Incluye pruebas históricas, clasificación, contexto local, voz, Wikipedia, clima, ubicaciones, rutas, lugares cercanos, contexto entre servicios y experiencia de enlaces.
 
-| Batería | Correctas | Total |
-|---|---:|---:|
-| Actividad 4 | 40 | 40 |
-| Validación | 50 | 50 |
-| Pruebas finales | 60 | 60 |
-| Independientes nuevas | 80 | 80 |
-| Inéditas v2 | 100 | 100 |
-| Memoria conversacional | 8 | 8 |
-| Funciones de voz | 8 | 8 |
-| **Total** | **346** | **346** |
-
-`pruebas_voz.py` utiliza simulaciones para comprobar Edge TTS, pygame, el respaldo local y la eliminación de archivos temporales sin reproducir audio ni acceder a Internet.
+Las pruebas de servicios y voz utilizan simulaciones cuando corresponde, por lo que no abren el navegador, reproducen audio ni dependen de una respuesta real de Internet.
 
 ## Consideraciones
 
-- Los datos académicos y contactos incluidos son simulados y se utilizan exclusivamente para la demostración.
+- Los datos académicos y contactos son simulados y se usan exclusivamente para demostración.
 - La precisión del reconocimiento depende del micrófono, el ruido ambiental y la conexión.
-- Los índices de dispositivos de audio pueden cambiar cuando se conectan dispositivos Bluetooth o USB.
-- Las funciones escritas continúan disponibles aunque fallen los servicios de voz.
+- Nominatim, OSRM, Overpass, Wikipedia y Open-Meteo son servicios externos; pueden responder lentamente o estar ocupados temporalmente.
+- OpenStreetMap contiene datos aportados por su comunidad. Un negocio ausente o sin etiquetas adecuadas podría no aparecer.
+- Las funciones académicas escritas continúan disponibles si un servicio externo o de voz falla.
 
 ## Estado del proyecto
 
-Las funciones académicas, la memoria conversacional y la interacción por voz están implementadas. El proyecto se encuentra en su etapa de validación final y documentación.
+La versión estable más reciente es **v1.6.0**, con memoria contextual entre servicios externos. Las mejoras de experiencia, enlaces interactivos, presentación de duraciones y validación ampliada se desarrollan en `feature/mejoras-experiencia-externa`.
