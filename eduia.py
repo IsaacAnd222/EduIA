@@ -33,6 +33,11 @@ from ubicaciones import (
     buscar_ubicacion,
     formatear_resultado_ubicacion,
 )
+from rutas import (
+    ErrorConsultaRuta,
+    calcular_ruta,
+    formatear_resultado_ruta,
+)
 
 datos_entrenamiento = [
     # Saludos
@@ -3983,6 +3988,175 @@ def procesar_consulta_ubicacion(
             contexto["ultima_pregunta"] = pregunta
 
     except ErrorConsultaUbicacion as error:
+        respuesta = str(error)
+        confianza = 0.0
+
+        if contexto is not None:
+            contexto["ultima_pregunta"] = pregunta
+
+    historial_id = guardar_consulta_historial(
+        estudiante["matricula"],
+        pregunta,
+        respuesta,
+        tipo,
+        categoria,
+        confianza,
+    )
+
+    return (
+        respuesta,
+        tipo,
+        categoria,
+        confianza,
+        historial_id,
+    )
+
+
+PATRONES_CONSULTA_RUTA = (
+    r"\bcomo (?:llego|llegar|voy)\b.*\b(?:a|al|hasta)\b",
+    r"\b(?:dame|muestra|muestrame|calcula|calculame) (?:la )?ruta\b",
+    r"^ruta\b.*\b(?:a|al|hasta|entre)\b",
+    r"\bdistancia (?:de|desde|entre)\b",
+    r"\bcuanto (?:hay|se hace|se tarda|tiempo hago)\b.*\b(?:a|al|hasta)\b",
+    r"^(?:el )?origen\b.+\b(?:el )?destino\b",
+)
+
+
+def es_consulta_ruta(pregunta):
+    texto = normalizar_texto(
+        str(pregunta)
+    ).strip(" ¿?¡!.,;:")
+
+    return any(
+        re.search(patron, texto)
+        for patron in PATRONES_CONSULTA_RUTA
+    )
+
+
+def _limpiar_lugar_ruta(lugar):
+    lugar = str(lugar).strip(" ¿?¡!.,;:")
+    return re.sub(
+        r"^(?:el|la|los|las)\s+",
+        "",
+        lugar,
+        flags=re.IGNORECASE,
+    ).strip()
+
+
+def extraer_lugares_ruta(pregunta):
+    texto = str(pregunta).strip(" ¿?¡!.,;:")
+
+    coincidencia_origen_destino = re.match(
+        (
+            r"^(?:el\s+)?origen(?:\s+es)?\s+(.+?)\s+"
+            r"(?:y|e)\s+(?:el\s+)?destino(?:\s+es)?\s+(.+)$"
+        ),
+        texto,
+        flags=re.IGNORECASE,
+    )
+
+    if coincidencia_origen_destino:
+        return (
+            _limpiar_lugar_ruta(
+                coincidencia_origen_destino.group(1)
+            ),
+            _limpiar_lugar_ruta(
+                coincidencia_origen_destino.group(2)
+            ),
+        )
+
+    usa_separador_entre = bool(
+        re.match(
+            r"^(?:ruta|distancia)\s+entre\s+",
+            texto,
+            flags=re.IGNORECASE,
+        )
+    )
+    inicios = (
+        r"^(?:ruta|distancia)\s+entre\s+",
+        (
+            r"^c[oó]mo\s+(?:llego|llegar|voy)\s+"
+            r"(?:desde\s+|de\s+|del\s+)?"
+        ),
+        (
+            r"^(?:dame|mu[eé]stra|calcula)(?:me)?\s+"
+            r"(?:la\s+)?ruta\s+(?:desde\s+|de\s+|del\s+)?"
+        ),
+        r"^ruta\s+(?:desde\s+|de\s+|del\s+)?",
+        r"^distancia\s+(?:desde\s+|de\s+|del\s+|entre\s+)",
+        (
+            r"^cu[aá]nto\s+(?:hay|se hace|se tarda|tiempo hago)\s+"
+            r"(?:desde\s+|de\s+|del\s+)?"
+        ),
+    )
+
+    contenido = ""
+
+    for inicio in inicios:
+        contenido_nuevo, cantidad = re.subn(
+            inicio,
+            "",
+            texto,
+            count=1,
+            flags=re.IGNORECASE,
+        )
+
+        if cantidad:
+            contenido = contenido_nuevo
+            break
+
+    if not contenido:
+        return "", ""
+
+    if usa_separador_entre:
+        patron_separador = r"^(.+?)\s+(?:y|e)\s+(.+)$"
+    else:
+        patron_separador = (
+            r"^(.+?)\s+(?:hasta\s+|al\s+|a\s+)(.+)$"
+        )
+
+    coincidencia = re.match(
+        patron_separador,
+        contenido,
+        flags=re.IGNORECASE,
+    )
+
+    if not coincidencia:
+        return "", ""
+
+    origen = _limpiar_lugar_ruta(coincidencia.group(1))
+    destino = _limpiar_lugar_ruta(coincidencia.group(2))
+    return origen, destino
+
+
+def procesar_consulta_ruta(
+    pregunta,
+    estudiante,
+    contexto=None,
+):
+    origen, destino = extraer_lugares_ruta(pregunta)
+    tipo = "externa"
+    categoria = "ruta"
+
+    try:
+        if not origen or not destino:
+            raise ErrorConsultaRuta(
+                "Indica claramente el lugar de origen y el destino."
+            )
+
+        resultado = calcular_ruta(origen, destino)
+        respuesta = formatear_resultado_ruta(resultado)
+        confianza = 1.0
+
+        if contexto is not None:
+            contexto["ultima_categoria"] = categoria
+            contexto["ultimo_tema"] = (
+                f"{origen} a {destino}"
+            )
+            contexto["ultima_intencion"] = "ruta"
+            contexto["ultima_pregunta"] = pregunta
+
+    except ErrorConsultaRuta as error:
         respuesta = str(error)
         confianza = 0.0
 

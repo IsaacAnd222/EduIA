@@ -13,10 +13,12 @@ from eduia import (
     crear_contexto_conversacional,
     es_consulta_clima,
     es_consulta_internet,
+    es_consulta_ruta,
     es_consulta_ubicacion,
     procesar_consulta,
     procesar_consulta_clima,
     procesar_consulta_internet,
+    procesar_consulta_ruta,
     procesar_consulta_ubicacion,
 )
 from base_datos import (
@@ -88,6 +90,8 @@ class AplicacionEduIA(ctk.CTk):
         self.token_consulta_clima = None
         self.consulta_ubicacion_activa = False
         self.token_consulta_ubicacion = None
+        self.consulta_ruta_activa = False
+        self.token_consulta_ruta = None
         self.voz_activada = ctk.BooleanVar(
             value=True
         )
@@ -1157,6 +1161,111 @@ class AplicacionEduIA(ctk.CTk):
 
         self.enviar_consulta()
 
+    def iniciar_consulta_ruta(self, consulta):
+        self.consulta_ruta_activa = True
+        token = object()
+        self.token_consulta_ruta = token
+
+        etiqueta_estado = self.agregar_mensaje(
+            "EduIA",
+            "Calculando la ruta...",
+        )
+
+        hilo = threading.Thread(
+            target=self.ejecutar_consulta_ruta,
+            args=(
+                consulta,
+                dict(self.estudiante_actual),
+                self.contexto_conversacion,
+                etiqueta_estado,
+                token,
+            ),
+            daemon=True,
+        )
+        hilo.start()
+
+    def ejecutar_consulta_ruta(
+        self,
+        consulta,
+        estudiante,
+        contexto,
+        etiqueta_estado,
+        token,
+    ):
+        try:
+            resultado = procesar_consulta_ruta(
+                consulta,
+                estudiante,
+                contexto,
+            )
+        except Exception:
+            resultado = (
+                "Ocurrió un problema inesperado al calcular la ruta.",
+                "externa",
+                "ruta",
+                0.0,
+                None,
+            )
+
+        self.after(
+            0,
+            lambda: self.finalizar_consulta_ruta(
+                resultado,
+                etiqueta_estado,
+                token,
+            ),
+        )
+
+    def finalizar_consulta_ruta(
+        self,
+        resultado,
+        etiqueta_estado,
+        token,
+    ):
+        if token is not self.token_consulta_ruta:
+            return
+
+        self.consulta_ruta_activa = False
+        self.token_consulta_ruta = None
+
+        if not etiqueta_estado.winfo_exists():
+            return
+
+        (
+            respuesta,
+            tipo,
+            categoria,
+            confianza,
+            historial_id,
+        ) = resultado
+
+        etiqueta_estado.configure(text=respuesta)
+        self.desplazar_al_final()
+
+        if self.voz_activada.get():
+            respuesta_hablada = respuesta.split(
+                "\n\nIndicaciones principales:",
+                1,
+            )[0]
+
+            hilo_voz = threading.Thread(
+                target=hablar,
+                args=(respuesta_hablada,),
+                daemon=True,
+            )
+            hilo_voz.start()
+
+        self.agregar_metadatos_respuesta(
+            tipo,
+            categoria,
+            confianza,
+        )
+
+        if historial_id is not None:
+            self.agregar_opciones_retroalimentacion(
+                historial_id
+            )
+
     def enviar_consulta(self, evento=None):
         consulta = (
             self.entrada_consulta.get().strip()
@@ -1186,6 +1295,7 @@ class AplicacionEduIA(ctk.CTk):
             self.busqueda_internet_activa
             or self.consulta_clima_activa
             or self.consulta_ubicacion_activa
+            or self.consulta_ruta_activa
         ):
             self.agregar_mensaje(
                 "EduIA",
@@ -1201,6 +1311,12 @@ class AplicacionEduIA(ctk.CTk):
 
         if es_consulta_internet(consulta):
             self.iniciar_busqueda_internet(
+                consulta
+            )
+            return
+
+        if es_consulta_ruta(consulta):
+            self.iniciar_consulta_ruta(
                 consulta
             )
             return
@@ -1435,6 +1551,8 @@ class AplicacionEduIA(ctk.CTk):
         self.token_consulta_clima = None
         self.consulta_ubicacion_activa = False
         self.token_consulta_ubicacion = None
+        self.consulta_ruta_activa = False
+        self.token_consulta_ruta = None
         self.contexto_conversacion = (
             crear_contexto_conversacional()
         )
@@ -1467,6 +1585,8 @@ class AplicacionEduIA(ctk.CTk):
         self.token_consulta_clima = None
         self.consulta_ubicacion_activa = False
         self.token_consulta_ubicacion = None
+        self.consulta_ruta_activa = False
+        self.token_consulta_ruta = None
         self.contexto_conversacion = (
             crear_contexto_conversacional()
         )
