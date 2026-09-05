@@ -39,6 +39,9 @@ def probar_deteccion_de_rutas():
         "Distancia entre Salamanca e Irapuato",
         "¿Cuánto hay de Salamanca al Instituto Irapuato?",
         "¿Cuánto se tarda de Salamanca a Irapuato?",
+        "¿Cuánto tiempo se hace de Irapuato a Puerto Vallarta?",
+        "¿Cuánta distancia hay entre Irapuato y Puerto Vallarta?",
+        "¿Cuál es la distancia entre Salamanca e Irapuato?",
         "Origen Salamanca y el destino Irapuato",
     )
 
@@ -94,6 +97,18 @@ def probar_extraccion_de_origen_y_destino():
             "Salamanca",
         ),
         "Origen Salamanca y el destino Irapuato": (
+            "Salamanca",
+            "Irapuato",
+        ),
+        "¿Cuánto tiempo se hace de Irapuato a Puerto Vallarta?": (
+            "Irapuato",
+            "Puerto Vallarta",
+        ),
+        "¿Cuánta distancia hay entre Irapuato y Puerto Vallarta?": (
+            "Irapuato",
+            "Puerto Vallarta",
+        ),
+        "¿Cuál es la distancia entre Salamanca e Irapuato?": (
             "Salamanca",
             "Irapuato",
         ),

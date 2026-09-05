@@ -261,10 +261,42 @@ def _procesar_resultado(resultado):
     return ubicacion
 
 
+def _seleccionar_resultado_principal(resultados):
+    if not resultados:
+        raise ErrorConsultaUbicacion(
+            "OpenStreetMap no devolvió ubicaciones válidas."
+        )
+
+    primero = resultados[0]
+    es_limite_administrativo = (
+        str(primero.get("categoria", "")).lower() == "boundary"
+        or str(primero.get("tipo", "")).lower() == "administrative"
+    )
+
+    if es_limite_administrativo:
+        tipos_urbanos = {
+            "city",
+            "town",
+            "village",
+            "municipality",
+        }
+
+        for resultado in resultados[1:]:
+            if (
+                str(resultado.get("categoria", "")).lower() == "place"
+                and str(resultado.get("tipo", "")).lower()
+                in tipos_urbanos
+            ):
+                return resultado
+
+    return primero
+
+
 def buscar_ubicaciones(
     consulta,
     limite=5,
     codigo_pais="mx",
+    conservar_duplicados=False,
 ):
     consulta = str(consulta).strip()
 
@@ -283,6 +315,7 @@ def buscar_ubicaciones(
         _normalizar_consulta(consulta),
         limite,
         codigo_pais,
+        bool(conservar_duplicados),
     )
 
     if clave_cache in _CACHE:
@@ -300,6 +333,9 @@ def buscar_ubicaciones(
 
     if codigo_pais:
         parametros["countrycodes"] = codigo_pais
+
+    if conservar_duplicados:
+        parametros["dedupe"] = 0
 
     url_base = obtener_url_nominatim()
 
@@ -351,16 +387,21 @@ def buscar_ubicacion(
 
     for alternativa in generar_consultas_alternativas(consulta):
         try:
-            return buscar_ubicaciones(
+            resultados = buscar_ubicaciones(
                 alternativa,
-                limite=1,
+                limite=5,
                 codigo_pais=codigo_pais,
-            )[0]
+                conservar_duplicados=True,
+            )
         except ErrorConsultaUbicacion as error:
             ultimo_error = error
 
             if not str(error).startswith("No encontré la ubicación"):
                 raise
+
+            continue
+
+        return _seleccionar_resultado_principal(resultados)
 
     if ultimo_error is not None:
         raise ErrorConsultaUbicacion(

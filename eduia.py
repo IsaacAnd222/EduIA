@@ -38,6 +38,12 @@ from rutas import (
     calcular_ruta,
     formatear_resultado_ruta,
 )
+from cercanos import (
+    CATEGORIAS as CATEGORIAS_CERCANOS,
+    ErrorConsultaCercanos,
+    buscar_cerca_de,
+    formatear_resultado_cercanos,
+)
 
 datos_entrenamiento = [
     # Saludos
@@ -4012,12 +4018,174 @@ def procesar_consulta_ubicacion(
     )
 
 
+PATRONES_PROXIMIDAD = (
+    r"\bcerca\b",
+    r"\bcercan(?:o|a|os|as)\b",
+    r"\balrededor(?:es)?\b",
+)
+
+
+def extraer_categoria_cercanos(pregunta):
+    texto = normalizar_texto(pregunta)
+    coincidencias = []
+
+    for clave, datos in CATEGORIAS_CERCANOS.items():
+        terminos = {
+            clave,
+            datos["plural"],
+            *datos["sinonimos"],
+        }
+
+        for termino in terminos:
+            termino = normalizar_texto(termino)
+
+            if re.search(
+                rf"\b{re.escape(termino)}\b",
+                texto,
+            ):
+                coincidencias.append((len(termino), clave))
+
+    if not coincidencias:
+        return ""
+
+    return max(coincidencias)[1]
+
+
+def es_consulta_cercanos(pregunta):
+    texto = normalizar_texto(
+        str(pregunta)
+    ).strip(" ¿?¡!.,;:")
+    menciona_proximidad = any(
+        re.search(patron, texto)
+        for patron in PATRONES_PROXIMIDAD
+    )
+
+    if not menciona_proximidad:
+        return False
+
+    return bool(
+        extraer_categoria_cercanos(texto)
+        or re.search(r"\blugares?\b", texto)
+    )
+
+
+def extraer_ubicacion_cercanos(
+    pregunta,
+    ubicacion_predeterminada="Irapuato",
+):
+    texto = str(pregunta).strip(" ¿?¡!.,;:")
+    patrones = (
+        (
+            r"\bcerca\s+(?:de\s+la\s+|de\s+los\s+|"
+            r"de\s+las\s+|del\s+|de\s+|al\s+|a\s+)(.+)$"
+        ),
+        (
+            r"\bcercan(?:o|a|os|as)\s+"
+            r"(?:a\s+la\s+|a\s+los\s+|a\s+las\s+|"
+            r"al\s+|a\s+|de\s+)(.+)$"
+        ),
+        r"\balrededor(?:es)?\s+de\s+(.+)$",
+    )
+
+    for patron in patrones:
+        coincidencia = re.search(
+            patron,
+            texto,
+            flags=re.IGNORECASE,
+        )
+
+        if not coincidencia:
+            continue
+
+        ubicacion = coincidencia.group(1).strip(
+            " ¿?¡!.,;:"
+        )
+        ubicacion_normalizada = normalizar_texto(ubicacion)
+
+        if ubicacion_normalizada in {
+            "aqui",
+            "mi ubicacion",
+            "donde estoy",
+            "mi zona",
+        }:
+            return ubicacion_predeterminada
+
+        return ubicacion
+
+    return ""
+
+
+def procesar_consulta_cercanos(
+    pregunta,
+    estudiante,
+    contexto=None,
+):
+    categoria_buscada = extraer_categoria_cercanos(pregunta)
+    ubicacion = extraer_ubicacion_cercanos(pregunta)
+    tipo = "externa"
+    categoria = "cercanos"
+
+    try:
+        if not categoria_buscada:
+            raise ErrorConsultaCercanos(
+                "Indica qué tipo de lugar deseas buscar."
+            )
+
+        if not ubicacion:
+            raise ErrorConsultaCercanos(
+                "Indica cerca de qué lugar deseas buscar."
+            )
+
+        resultado = buscar_cerca_de(
+            categoria_buscada,
+            ubicacion,
+        )
+        respuesta = formatear_resultado_cercanos(resultado)
+        confianza = 1.0
+
+        if contexto is not None:
+            contexto["ultima_categoria"] = categoria
+            contexto["ultimo_tema"] = (
+                f"{resultado['categoria_plural']} cerca de "
+                f"{resultado['ubicacion']['nombre']}"
+            )
+            contexto["ultima_intencion"] = "cercanos"
+            contexto["ultima_pregunta"] = pregunta
+
+    except ErrorConsultaCercanos as error:
+        respuesta = str(error)
+        confianza = 0.0
+
+        if contexto is not None:
+            contexto["ultima_pregunta"] = pregunta
+
+    historial_id = guardar_consulta_historial(
+        estudiante["matricula"],
+        pregunta,
+        respuesta,
+        tipo,
+        categoria,
+        confianza,
+    )
+
+    return (
+        respuesta,
+        tipo,
+        categoria,
+        confianza,
+        historial_id,
+    )
+
+
 PATRONES_CONSULTA_RUTA = (
     r"\bcomo (?:llego|llegar|voy)\b.*\b(?:a|al|hasta)\b",
     r"\b(?:dame|muestra|muestrame|calcula|calculame) (?:la )?ruta\b",
     r"^ruta\b.*\b(?:a|al|hasta|entre)\b",
     r"\bdistancia (?:de|desde|entre)\b",
     r"\bcuanto (?:hay|se hace|se tarda|tiempo hago)\b.*\b(?:a|al|hasta)\b",
+    r"\bcuanto tiempo\b.*\b(?:de|desde|a|al|hasta)\b",
+    r"\bcuanta distancia\b.*\b(?:de|desde|entre|a|al|hasta)\b",
+    r"\b(?:cual|que) (?:es )?(?:la )?distancia\b.*\b(?:de|desde|entre)\b",
     r"^(?:el )?origen\b.+\b(?:el )?destino\b",
 )
 
@@ -4067,7 +4235,12 @@ def extraer_lugares_ruta(pregunta):
 
     usa_separador_entre = bool(
         re.match(
-            r"^(?:ruta|distancia)\s+entre\s+",
+            (
+                r"^(?:(?:ruta|distancia)\s+entre|"
+                r"cu[aá]nta\s+distancia\s+(?:hay\s+)?entre|"
+                r"(?:cu[aá]l|qu[eé])\s+(?:es\s+)?(?:la\s+)?"
+                r"distancia\s+(?:hay\s+)?entre)\s+"
+            ),
             texto,
             flags=re.IGNORECASE,
         )
@@ -4084,6 +4257,20 @@ def extraer_lugares_ruta(pregunta):
         ),
         r"^ruta\s+(?:desde\s+|de\s+|del\s+)?",
         r"^distancia\s+(?:desde\s+|de\s+|del\s+|entre\s+)",
+        (
+            r"^cu[aá]nto\s+tiempo\s+(?:se\s+)?"
+            r"(?:hace|tarda)\s+"
+            r"(?:desde\s+|de\s+|del\s+)?"
+        ),
+        (
+            r"^cu[aá]nta\s+distancia\s+(?:hay\s+)?"
+            r"(?:desde\s+|de\s+|del\s+|entre\s+)"
+        ),
+        (
+            r"^(?:cu[aá]l|qu[eé])\s+(?:es\s+)?(?:la\s+)?"
+            r"distancia\s+(?:hay\s+)?"
+            r"(?:desde\s+|de\s+|del\s+|entre\s+)"
+        ),
         (
             r"^cu[aá]nto\s+(?:hay|se hace|se tarda|tiempo hago)\s+"
             r"(?:desde\s+|de\s+|del\s+)?"

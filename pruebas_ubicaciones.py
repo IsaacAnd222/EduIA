@@ -32,6 +32,44 @@ RESULTADO_API = {
     },
 }
 
+RESULTADO_LIMITE_SALAMANCA = {
+    "place_id": 20001,
+    "osm_type": "relation",
+    "osm_id": 5606207,
+    "lat": "20.6511359",
+    "lon": "-101.1667670",
+    "category": "boundary",
+    "type": "administrative",
+    "addresstype": "municipality",
+    "name": "Salamanca",
+    "display_name": "Salamanca, Guanajuato, México",
+    "address": {
+        "municipality": "Salamanca",
+        "state": "Guanajuato",
+        "country": "México",
+        "country_code": "mx",
+    },
+}
+
+RESULTADO_CIUDAD_SALAMANCA = {
+    "place_id": 20002,
+    "osm_type": "node",
+    "osm_id": 30002,
+    "lat": "20.5700000",
+    "lon": "-101.1950000",
+    "category": "place",
+    "type": "city",
+    "addresstype": "city",
+    "name": "Salamanca",
+    "display_name": "Salamanca, Guanajuato, México",
+    "address": {
+        "city": "Salamanca",
+        "state": "Guanajuato",
+        "country": "México",
+        "country_code": "mx",
+    },
+}
+
 
 class RespuestaSimulada:
     def __init__(self, contenido):
@@ -150,6 +188,40 @@ def probar_busqueda_alternativa_si_no_hay_resultados():
         "Centro Histórico, León, Guanajuato",
     ]
     assert resultado["nombre"] == "Instituto Irapuato"
+
+
+def probar_preferencia_por_centro_urbano():
+    ubicaciones.limpiar_cache()
+
+    with (
+        patch.object(
+            ubicaciones,
+            "_respetar_limite_solicitudes",
+        ),
+        patch.object(
+            ubicaciones,
+            "_solicitar_json",
+            return_value=[
+                RESULTADO_LIMITE_SALAMANCA,
+                RESULTADO_CIUDAD_SALAMANCA,
+            ],
+        ) as solicitar,
+    ):
+        resultado = ubicaciones.buscar_ubicacion(
+            "Salamanca, Guanajuato"
+        )
+
+    parametros = parse_qs(
+        urlparse(solicitar.call_args.args[0]).query
+    )
+
+    assert parametros["limit"] == ["5"]
+    assert parametros["dedupe"] == ["0"]
+    assert resultado["osm_type"] == "node"
+    assert resultado["categoria"] == "place"
+    assert resultado["tipo"] == "city"
+    assert resultado["latitud"] == 20.57
+    assert resultado["longitud"] == -101.195
 
 
 def probar_limite_de_resultados():
@@ -454,6 +526,7 @@ PRUEBAS = [
     ("Rechaza consultas vacías", probar_consulta_vacia),
     ("Genera búsquedas alternativas prudentes", probar_consultas_alternativas),
     ("Reintenta cuando no encuentra resultados", probar_busqueda_alternativa_si_no_hay_resultados),
+    ("Prefiere el centro urbano de una ciudad", probar_preferencia_por_centro_urbano),
     ("Limita la cantidad de resultados", probar_limite_de_resultados),
     ("Construye los parámetros de búsqueda", probar_parametros_de_busqueda),
     ("Permite búsquedas internacionales", probar_busqueda_sin_filtro_de_pais),
