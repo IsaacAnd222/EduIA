@@ -20,6 +20,7 @@ La información escolar simulada se almacena localmente en SQLite. Para las cons
 - Distancias, duración e indicaciones por carretera mediante OSRM.
 - Hospitales, farmacias, cafeterías, restaurantes, bancos y otros lugares cercanos mediante Overpass.
 - Botones para abrir fuentes, lugares y rutas en el navegador.
+- Modo cliente-servidor para compartir una sola base de datos en la red local.
 
 ## Contexto entre servicios
 
@@ -52,6 +53,12 @@ Las referencias como `primero`, `segundo`, `último`, `ahí` y `ese lugar` utili
 | Lugares cercanos | Overpass / OpenStreetMap | Lugares ordenados por distancia lineal |
 
 Las distancias mostradas en una búsqueda de lugares cercanos son aproximaciones en línea recta. Cuando se solicita cómo llegar, OSRM calcula la distancia por calles y carreteras; por eso ambas cifras pueden ser diferentes.
+
+## Servidor compartido
+
+EduIA puede trabajar en modo local o conectarse a un servidor central mediante HTTP. En el modo compartido, únicamente `ServidorEduIA` abre el archivo SQLite; los clientes solicitan la información mediante una API autenticada. De esta manera, estudiantes, horarios, calificaciones, avisos, historial y retroalimentación provienen de una sola base de datos.
+
+La dirección se define en `configuracion_cliente.json`, por lo que puede cambiarse al trasladar el servidor a otra red sin volver a compilar EduIA. El servidor escucha de forma predeterminada en el puerto `8765`.
 
 ## Funciones de voz
 
@@ -94,6 +101,9 @@ EduIA/
 ├── rutas.py                        Rutas y distancias por carretera
 ├── cercanos.py                     Lugares cercanos
 ├── enlaces.py                      Acciones para fuentes y rutas
+├── configuracion_red.py             Configuración local y remota
+├── repositorio_datos.py             Acceso unificado a los datos
+├── servidor_eduia.py                API del servidor central
 ├── eduia.py                        Clasificación, contexto y procesamiento
 ├── interfaz.py                     Interfaz gráfica y conversación
 ├── ejecutar_todas_las_pruebas.py   Ejecutor de la validación completa
@@ -104,6 +114,15 @@ EduIA/
 ```
 
 ## Instalación en Windows
+
+Para usuarios finales se generan dos instaladores:
+
+- `EduIA_Cliente_Setup_v1.8.0.exe`: instala la aplicación utilizada por los estudiantes.
+- `EduIA_Servidor_Setup_v1.8.0.exe`: instala el servidor central, crea la regla privada del Firewall para el puerto `8765` y conserva SQLite en `%LOCALAPPDATA%\EduIA\Servidor\data`.
+
+Los compañeros instalan únicamente el cliente. La computadora anfitriona ejecuta el servidor y comparte su red local; todos los clientes consultan y actualizan una sola base de datos central.
+
+Para ejecutar el proyecto desde el código fuente:
 
 ```powershell
 python -m venv .venv
@@ -128,7 +147,7 @@ La validación completa se ejecuta con un solo comando:
 python ejecutar_todas_las_pruebas.py
 ```
 
-El ejecutor recorre 19 baterías, muestra el resultado de cada una y calcula tanto los archivos correctos como los casos individuales comprobados. Incluye pruebas históricas, clasificación, contexto local, voz, Wikipedia, clima, ubicaciones, rutas, lugares cercanos, contexto entre servicios y experiencia de enlaces.
+El ejecutor recorre 20 baterías, muestra el resultado de cada una y calcula tanto los archivos correctos como los casos individuales comprobados. Incluye pruebas históricas, clasificación, contexto local, voz, Wikipedia, clima, ubicaciones, rutas, lugares cercanos, contexto entre servicios, experiencia de enlaces y comunicación con el servidor compartido.
 
 Las pruebas de servicios y voz utilizan simulaciones cuando corresponde, por lo que no abren el navegador, reproducen audio ni dependen de una respuesta real de Internet.
 
@@ -142,4 +161,4 @@ Las pruebas de servicios y voz utilizan simulaciones cuando corresponde, por lo 
 
 ## Estado del proyecto
 
-La versión estable más reciente es **v1.6.0**, con memoria contextual entre servicios externos. Las mejoras de experiencia, enlaces interactivos, presentación de duraciones y validación ampliada se desarrollan en `feature/mejoras-experiencia-externa`.
+La versión estable más reciente es **v1.8.0**. Incluye aplicación de escritorio, servicios externos, memoria contextual, distribución para Windows y funcionamiento cliente-servidor con una base de datos central compartida. La validación comprende 20 baterías y 511 casos individuales.

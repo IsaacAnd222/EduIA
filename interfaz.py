@@ -26,7 +26,8 @@ from eduia import (
     procesar_consulta_ruta,
     procesar_consulta_ubicacion,
 )
-from base_datos import (
+from repositorio_datos import (
+    ErrorServidorDatos,
     buscar_estudiante,
     guardar_retroalimentacion,
     obtener_historial_por_estudiante,
@@ -237,7 +238,11 @@ class AplicacionEduIA(ctk.CTk):
             )
             return
 
-        estudiante = buscar_estudiante(matricula)
+        try:
+            estudiante = buscar_estudiante(matricula)
+        except ErrorServidorDatos as error:
+            self.etiqueta_error.configure(text=str(error))
+            return
 
         if estudiante is None:
             self.etiqueta_error.configure(
@@ -1517,17 +1522,21 @@ class AplicacionEduIA(ctk.CTk):
             )
             return
 
-        (
-            respuesta,
-            tipo,
-            categoria,
-            confianza,
-            historial_id,
-        ) = procesar_consulta(
-            consulta,
-            self.estudiante_actual,
-            self.contexto_conversacion,
-        )
+        try:
+            (
+                respuesta,
+                tipo,
+                categoria,
+                confianza,
+                historial_id,
+            ) = procesar_consulta(
+                consulta,
+                self.estudiante_actual,
+                self.contexto_conversacion,
+            )
+        except ErrorServidorDatos as error:
+            self.agregar_mensaje("EduIA", str(error))
+            return
 
         self.agregar_mensaje(
             "EduIA",
@@ -1641,10 +1650,14 @@ class AplicacionEduIA(ctk.CTk):
         fue_util,
         etiqueta_estado,
     ):
-        guardar_retroalimentacion(
-            historial_id,
-            fue_util,
-        )
+        try:
+            guardar_retroalimentacion(
+                historial_id,
+                fue_util,
+            )
+        except ErrorServidorDatos as error:
+            etiqueta_estado.configure(text=str(error))
+            return
 
         seleccion = (
             "Sí"
@@ -1673,10 +1686,14 @@ class AplicacionEduIA(ctk.CTk):
         ):
             mensaje.destroy()
 
-        historial = obtener_historial_por_estudiante(
-            self.estudiante_actual["matricula"],
-            limite=10,
-        )
+        try:
+            historial = obtener_historial_por_estudiante(
+                self.estudiante_actual["matricula"],
+                limite=10,
+            )
+        except ErrorServidorDatos as error:
+            self.agregar_mensaje("EduIA", str(error))
+            return
 
         if not historial:
             self.agregar_mensaje(

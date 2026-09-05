@@ -25,6 +25,7 @@ PRUEBAS = (
     "pruebas_integracion_cercanos.py",
     "pruebas_contexto_externo_v1.py",
     "pruebas_experiencia_externa.py",
+    "pruebas_servidor_compartido.py",
     "pruebas_voz.py",
 )
 

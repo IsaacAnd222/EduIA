@@ -6,7 +6,7 @@ import unicodedata
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
-from base_datos import (
+from repositorio_datos import (
     obtener_asignaciones_por_semestre,
     obtener_avisos_por_estudiante,
     obtener_calificaciones_por_estudiante,

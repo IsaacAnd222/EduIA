@@ -4,7 +4,7 @@ from sklearn.feature_extraction.text import (
     TfidfVectorizer,
 )
 from sklearn.metrics.pairwise import cosine_similarity
-from base_datos import (
+from repositorio_datos import (
     crear_base_datos,
     obtener_contenidos_academicos,
 )

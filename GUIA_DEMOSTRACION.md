@@ -4,11 +4,21 @@ Duración sugerida: 6 a 8 minutos.
 
 ## Preparación
 
-1. Activa el entorno virtual y ejecuta `python ejecutar_todas_las_pruebas.py`.
-2. Confirma que el resumen muestre cero errores y cero archivos no encontrados.
-3. Ejecuta `python main.py`.
-4. Verifica el micrófono, el volumen y la conexión a Internet.
-5. Inicia sesión con una matrícula de demostración conocida.
+1. Activa la zona Wi-Fi móvil de la computadora servidor.
+2. Conecta los equipos cliente a esa red.
+3. Inicia `ServidorEduIA` y confirma que muestre «listo para recibir conexiones».
+4. Ejecuta la batería completa y confirma cero errores.
+5. Inicia EduIA en uno o más equipos cliente.
+6. Verifica el micrófono, el volumen y la conexión a Internet.
+7. Inicia sesión con una matrícula de demostración conocida.
+
+## Demostración del servidor compartido
+
+Mantén visible la ventana del servidor y realiza una consulta desde un cliente. Señala la solicitud HTTP con código `200` que aparece en el servidor. Después abre el historial desde otro cliente con la misma matrícula para demostrar que ambos utilizan una sola base de datos.
+
+Explica brevemente que los clientes no abren el archivo SQLite: solamente el servidor central lo hace, reduciendo el riesgo de bloqueos y manteniendo la información sincronizada.
+
+La validación presencial se realizó satisfactoriamente con computadoras independientes: los estudiantes accedieron a la información académica y las consultas efectuadas desde un equipo aparecieron en el historial consultado desde otro.
 
 ## Recorrido recomendado
 
@@ -68,6 +78,7 @@ Muestra brevemente:
 - Si Overpass está ocupado, vuelve a intentar o muestra una búsqueda realizada previamente en el historial.
 - Si un lugar no aparece, explica que OpenStreetMap depende de datos comunitarios y etiquetas disponibles.
 - Si Internet falla, demuestra las consultas académicas locales y menciona que permanecen funcionales.
+- Si el cliente no inicia sesión, confirma que el servidor siga abierto y que ambos equipos estén conectados a la misma zona Wi-Fi móvil.
 - Si una respuesta es extensa, utiliza primero la pregunta contextual breve «¿Cuánto tiempo tardaría?».
 
 ## Lista de comprobación final
@@ -77,4 +88,7 @@ Muestra brevemente:
 - [ ] Micrófono y altavoces funcionando.
 - [ ] Respuestas por voz configuradas según el entorno.
 - [ ] Internet disponible.
+- [ ] Servidor central encendido y accesible.
+- [ ] Equipos conectados a la misma red local.
+- [ ] Instalador del cliente disponible para los participantes.
 - [ ] Ventanas del navegador cerradas antes de comenzar.

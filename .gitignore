@@ -15,10 +15,19 @@ data/*.db
 data/*.sqlite
 data/*.sqlite3
 
-# Configuración local de VS Code
+# Configuracion local de VS Code
 .vscode/
 
-# Archivos del sistema
+# Construccion y distribucion para Windows
+build/
+dist/
+installer/
+
+# Configuracion privada de cada equipo
+configuracion_cliente.json
+configuracion_servidor.json
+
+# Reportes y archivos del sistema
+reportes/
 .DS_Store
 Thumbs.db
-reportes/

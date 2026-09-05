@@ -1,4 +1,5 @@
 import sqlite3
+import os
 
 from contextlib import closing
 from datetime import date, datetime, timedelta
@@ -6,7 +7,9 @@ from pathlib import Path
 
 
 CARPETA_PROYECTO = Path(__file__).resolve().parent
-CARPETA_DATOS = CARPETA_PROYECTO / "data"
+CARPETA_DATOS = Path(
+    os.getenv("EDUIA_CARPETA_DATOS", CARPETA_PROYECTO / "data")
+).resolve()
 RUTA_BASE_DATOS = CARPETA_DATOS / "eduia.db"
 
 
@@ -556,10 +559,15 @@ CONTENIDOS_ACADEMICOS = [
 ]
 
 def conectar():
-    CARPETA_DATOS.mkdir(exist_ok=True)
+    CARPETA_DATOS.mkdir(parents=True, exist_ok=True)
 
-    conexion = sqlite3.connect(RUTA_BASE_DATOS)
+    conexion = sqlite3.connect(
+        RUTA_BASE_DATOS,
+        timeout=10,
+    )
     conexion.execute("PRAGMA foreign_keys = ON")
+    conexion.execute("PRAGMA busy_timeout = 10000")
+    conexion.execute("PRAGMA journal_mode = WAL")
 
     return conexion
 

@@ -1,9 +1,13 @@
-from base_datos import crear_base_datos
+from repositorio_datos import ErrorServidorDatos, crear_base_datos
 from interfaz import AplicacionEduIA
 
 
 def main():
-    crear_base_datos()
+    try:
+        crear_base_datos()
+    except ErrorServidorDatos:
+        # La interfaz explicará el problema al intentar iniciar sesión.
+        pass
 
     aplicacion = AplicacionEduIA()
     aplicacion.mainloop()
