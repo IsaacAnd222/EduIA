@@ -10,6 +10,7 @@ from voz import hablar
 
 
 from eduia import (
+    clasificar_consulta_externa_contextual,
     crear_contexto_conversacional,
     es_consulta_cercanos,
     es_consulta_clima,
@@ -1415,6 +1416,13 @@ class AplicacionEduIA(ctk.CTk):
         )
         self.entrada_consulta.delete(0, "end")
 
+        consulta_externa_contextual = (
+            clasificar_consulta_externa_contextual(
+                consulta,
+                self.contexto_conversacion,
+            )
+        )
+
         if es_consulta_internet(consulta):
             self.iniciar_busqueda_internet(
                 consulta
@@ -1427,19 +1435,28 @@ class AplicacionEduIA(ctk.CTk):
             )
             return
 
-        if es_consulta_ruta(consulta):
+        if (
+            es_consulta_ruta(consulta)
+            or consulta_externa_contextual == "ruta"
+        ):
             self.iniciar_consulta_ruta(
                 consulta
             )
             return
 
-        if es_consulta_clima(consulta):
+        if (
+            es_consulta_clima(consulta)
+            or consulta_externa_contextual == "clima"
+        ):
             self.iniciar_consulta_clima(
                 consulta
             )
             return
 
-        if es_consulta_ubicacion(consulta):
+        if (
+            es_consulta_ubicacion(consulta)
+            or consulta_externa_contextual == "ubicacion"
+        ):
             self.iniciar_consulta_ubicacion(
                 consulta
             )

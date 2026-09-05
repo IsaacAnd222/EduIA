@@ -36,6 +36,7 @@ from ubicaciones import (
 from rutas import (
     ErrorConsultaRuta,
     calcular_ruta,
+    consultar_ruta_coordenadas,
     formatear_resultado_ruta,
 )
 from cercanos import (
@@ -3839,13 +3840,40 @@ def procesar_consulta_clima(
     contexto=None,
 ):
     ubicacion = extraer_ubicacion_clima(pregunta)
+    lugar_contextual = resolver_lugar_externo_contextual(
+        pregunta,
+        contexto,
+    )
     tipo = "externa"
     categoria = "clima"
 
     try:
-        resultado = consultar_clima_de_ubicacion(
-            ubicacion
-        )
+        if lugar_contextual is not None:
+            ubicacion = lugar_contextual["nombre"]
+            pronostico = consultar_pronostico(
+                lugar_contextual["latitud"],
+                lugar_contextual["longitud"],
+                dias=3,
+            )
+            resultado = {
+                "ubicacion": {
+                    "nombre": lugar_contextual["nombre"],
+                    "estado": lugar_contextual.get("estado"),
+                    "pais": lugar_contextual.get("pais"),
+                },
+                **pronostico,
+                "fuente": (
+                    "Open-Meteo y © OpenStreetMap contributors"
+                ),
+                "enlace": (
+                    "https://open-meteo.com/\n"
+                    f"{lugar_contextual.get('enlace', '')}"
+                ).strip(),
+            }
+        else:
+            resultado = consultar_clima_de_ubicacion(
+                ubicacion
+            )
         respuesta = formatear_resultado_clima(
             resultado
         )
@@ -3856,6 +3884,11 @@ def procesar_consulta_clima(
             contexto["ultimo_tema"] = ubicacion
             contexto["ultima_intencion"] = "clima"
             contexto["ultima_pregunta"] = pregunta
+
+            if lugar_contextual is not None:
+                contexto["ultimo_lugar_seleccionado"] = dict(
+                    lugar_contextual
+                )
 
     except (
         ErrorConsultaClima,
@@ -3977,11 +4010,29 @@ def procesar_consulta_ubicacion(
     contexto=None,
 ):
     busqueda = extraer_busqueda_ubicacion(pregunta)
+    lugar_contextual = resolver_lugar_externo_contextual(
+        pregunta,
+        contexto,
+    )
     tipo = "externa"
     categoria = "ubicacion"
 
     try:
-        resultado = buscar_ubicacion(busqueda)
+        if lugar_contextual is not None:
+            referencia = contexto.get(
+                "ultima_ubicacion_referencia"
+            ) or {}
+            resultado = {
+                **lugar_contextual,
+                "direccion_completa": (
+                    lugar_contextual.get("direccion")
+                    or f"Cerca de {referencia.get('nombre', 'la ubicación de referencia')}"
+                ),
+            }
+            busqueda = resultado["nombre"]
+        else:
+            resultado = buscar_ubicacion(busqueda)
+
         respuesta = formatear_resultado_ubicacion(
             resultado
         )
@@ -3992,6 +4043,11 @@ def procesar_consulta_ubicacion(
             contexto["ultimo_tema"] = resultado["nombre"]
             contexto["ultima_intencion"] = "ubicacion"
             contexto["ultima_pregunta"] = pregunta
+
+            if lugar_contextual is not None:
+                contexto["ultimo_lugar_seleccionado"] = dict(
+                    lugar_contextual
+                )
 
     except ErrorConsultaUbicacion as error:
         respuesta = str(error)
@@ -4151,6 +4207,14 @@ def procesar_consulta_cercanos(
             )
             contexto["ultima_intencion"] = "cercanos"
             contexto["ultima_pregunta"] = pregunta
+            contexto["ultima_ubicacion_referencia"] = dict(
+                resultado["ubicacion"]
+            )
+            contexto["ultimos_lugares_cercanos"] = [
+                dict(lugar)
+                for lugar in resultado["lugares"]
+            ]
+            contexto["ultimo_lugar_seleccionado"] = None
 
     except ErrorConsultaCercanos as error:
         respuesta = str(error)
@@ -4322,6 +4386,36 @@ def procesar_consulta_ruta(
     contexto=None,
 ):
     origen, destino = extraer_lugares_ruta(pregunta)
+    origen_contextual = None
+    destino_contextual = None
+
+    if contexto is not None and (not origen or not destino):
+        lugar_referido = resolver_lugar_externo_contextual(
+            pregunta,
+            contexto,
+        )
+
+        if lugar_referido is not None:
+            origen_contextual = contexto.get(
+                "ultima_ubicacion_referencia"
+            )
+            destino_contextual = lugar_referido
+
+            if origen_contextual:
+                origen = origen_contextual["nombre"]
+                destino = destino_contextual["nombre"]
+
+        elif contexto.get("ultima_ruta"):
+            texto = normalizar_texto(pregunta)
+
+            if re.search(
+                r"\b(?:cuanto|tiempo|tardaria|distancia)\b",
+                texto,
+            ):
+                origen_contextual = contexto["ultima_ruta"]["origen"]
+                destino_contextual = contexto["ultima_ruta"]["destino"]
+                origen = origen_contextual["nombre"]
+                destino = destino_contextual["nombre"]
     tipo = "externa"
     categoria = "ruta"
 
@@ -4331,7 +4425,13 @@ def procesar_consulta_ruta(
                 "Indica claramente el lugar de origen y el destino."
             )
 
-        resultado = calcular_ruta(origen, destino)
+        if origen_contextual and destino_contextual:
+            resultado = consultar_ruta_coordenadas(
+                origen_contextual,
+                destino_contextual,
+            )
+        else:
+            resultado = calcular_ruta(origen, destino)
         respuesta = formatear_resultado_ruta(resultado)
         confianza = 1.0
 
@@ -4342,6 +4442,15 @@ def procesar_consulta_ruta(
             )
             contexto["ultima_intencion"] = "ruta"
             contexto["ultima_pregunta"] = pregunta
+            contexto["ultima_ruta"] = {
+                "origen": dict(resultado["origen"]),
+                "destino": dict(resultado["destino"]),
+            }
+
+            if destino_contextual is not None:
+                contexto["ultimo_lugar_seleccionado"] = dict(
+                    destino_contextual
+                )
 
     except ErrorConsultaRuta as error:
         respuesta = str(error)
@@ -4374,7 +4483,96 @@ def crear_contexto_conversacional():
         "ultimo_tema": None,
         "ultima_intencion": None,
         "ultima_pregunta": None,
+        "ultima_ubicacion_referencia": None,
+        "ultimos_lugares_cercanos": [],
+        "ultimo_lugar_seleccionado": None,
+        "ultima_ruta": None,
     }
+
+
+REFERENCIAS_ORDINALES = (
+    (r"\b(?:primer|primero|primera|1|1ro)\b", 0),
+    (r"\b(?:segundo|segunda|2|2do)\b", 1),
+    (r"\b(?:tercer|tercero|tercera|3|3ro)\b", 2),
+    (r"\b(?:cuarto|cuarta|4|4to)\b", 3),
+    (r"\b(?:quinto|quinta|5|5to)\b", 4),
+)
+
+
+def resolver_lugar_externo_contextual(pregunta, contexto):
+    if not contexto:
+        return None
+
+    texto = normalizar_texto(pregunta)
+    lugares = contexto.get("ultimos_lugares_cercanos") or []
+
+    if re.search(r"\b(?:mas cercano|mas cercana)\b", texto):
+        indice = 0
+    elif re.search(r"\b(?:ultimo|ultima)\b", texto):
+        indice = len(lugares) - 1
+    else:
+        indice = None
+
+        for patron, posicion in REFERENCIAS_ORDINALES:
+            if re.search(patron, texto):
+                indice = posicion
+                break
+
+    if indice is not None:
+        if 0 <= indice < len(lugares):
+            return dict(lugares[indice])
+        return None
+
+    if re.search(
+        r"\b(?:ahi|alli|ese lugar|esa ubicacion|ese sitio)\b",
+        texto,
+    ):
+        seleccionado = contexto.get("ultimo_lugar_seleccionado")
+
+        if seleccionado:
+            return dict(seleccionado)
+
+        referencia = contexto.get("ultima_ubicacion_referencia")
+
+        if referencia:
+            return dict(referencia)
+
+    return None
+
+
+def clasificar_consulta_externa_contextual(pregunta, contexto):
+    if not contexto:
+        return None
+
+    texto = normalizar_texto(pregunta)
+    lugar = resolver_lugar_externo_contextual(pregunta, contexto)
+
+    if lugar is not None:
+        if re.search(
+            r"\b(?:como llego|como voy|ruta|llegar|distancia|tiempo)\b",
+            texto,
+        ):
+            return "ruta"
+
+        if re.search(
+            r"\b(?:clima|temperatura|llovera|pronostico)\b",
+            texto,
+        ):
+            return "clima"
+
+        if re.search(
+            r"\b(?:donde|direccion|ubicacion|coordenadas)\b",
+            texto,
+        ):
+            return "ubicacion"
+
+    if contexto.get("ultima_ruta") and re.search(
+        r"\b(?:cuanto tiempo|cuanto tardaria|que distancia|cuanta distancia)\b",
+        texto,
+    ):
+        return "ruta"
+
+    return None
 
 
 def extraer_tema_contextual(pregunta):
