@@ -25,7 +25,13 @@ from internet import (
 from clima import (
     ErrorConsultaClima,
     consultar_clima,
+    consultar_pronostico,
     formatear_resultado_clima,
+)
+from ubicaciones import (
+    ErrorConsultaUbicacion,
+    buscar_ubicacion,
+    formatear_resultado_ubicacion,
 )
 
 datos_entrenamiento = [
@@ -3742,6 +3748,13 @@ def extraer_ubicacion_clima(
         flags=re.IGNORECASE,
     ).strip(" ¿?¡!.,;:")
 
+    ubicacion = re.sub(
+        r"^(?:el|la|los|las)\s+",
+        "",
+        ubicacion,
+        flags=re.IGNORECASE,
+    )
+
     if normalizar_texto(ubicacion) in {
         "",
         "hoy",
@@ -3751,6 +3764,62 @@ def extraer_ubicacion_clima(
         return ubicacion_predeterminada
 
     return ubicacion
+
+
+PALABRAS_LUGAR_ESPECIFICO = (
+    "instituto",
+    "universidad",
+    "escuela",
+    "colegio",
+    "campus",
+    "plaza",
+    "hospital",
+    "clinica",
+    "aeropuerto",
+    "parque",
+    "museo",
+    "centro comercial",
+)
+
+
+def es_lugar_especifico_clima(ubicacion):
+    texto = normalizar_texto(ubicacion)
+
+    return any(
+        palabra in texto
+        for palabra in PALABRAS_LUGAR_ESPECIFICO
+    )
+
+
+def consultar_clima_de_ubicacion(ubicacion):
+    if not es_lugar_especifico_clima(ubicacion):
+        return consultar_clima(
+            ubicacion,
+            dias=3,
+        )
+
+    lugar = buscar_ubicacion(ubicacion)
+    pronostico = consultar_pronostico(
+        lugar["latitud"],
+        lugar["longitud"],
+        dias=3,
+    )
+
+    return {
+        "ubicacion": {
+            "nombre": lugar["nombre"],
+            "estado": lugar.get("estado"),
+            "pais": lugar.get("pais"),
+        },
+        **pronostico,
+        "fuente": (
+            "Open-Meteo y © OpenStreetMap contributors"
+        ),
+        "enlace": (
+            "https://open-meteo.com/\n"
+            f"{lugar['enlace']}"
+        ),
+    }
 
 
 def procesar_consulta_clima(
@@ -3763,9 +3832,8 @@ def procesar_consulta_clima(
     categoria = "clima"
 
     try:
-        resultado = consultar_clima(
-            ubicacion,
-            dias=3,
+        resultado = consultar_clima_de_ubicacion(
+            ubicacion
         )
         respuesta = formatear_resultado_clima(
             resultado
@@ -3778,7 +3846,143 @@ def procesar_consulta_clima(
             contexto["ultima_intencion"] = "clima"
             contexto["ultima_pregunta"] = pregunta
 
-    except ErrorConsultaClima as error:
+    except (
+        ErrorConsultaClima,
+        ErrorConsultaUbicacion,
+    ) as error:
+        respuesta = str(error)
+        confianza = 0.0
+
+        if contexto is not None:
+            contexto["ultima_pregunta"] = pregunta
+
+    historial_id = guardar_consulta_historial(
+        estudiante["matricula"],
+        pregunta,
+        respuesta,
+        tipo,
+        categoria,
+        confianza,
+    )
+
+    return (
+        respuesta,
+        tipo,
+        categoria,
+        confianza,
+        historial_id,
+    )
+
+
+PATRONES_CONSULTA_UBICACION = (
+    r"\bdonde (?:esta|se encuentra|queda)\b",
+    r"\b(?:direccion|ubicacion|coordenadas) de\b",
+    r"\b(?:ubica|localiza)\b",
+    r"^busca .+\ben\b",
+)
+
+
+CONSULTAS_UBICACION_ESCOLAR = (
+    "donde esta la biblioteca",
+    "donde se encuentra la biblioteca",
+    "donde queda la biblioteca",
+    "donde esta la cafeteria",
+    "donde se encuentra la cafeteria",
+    "donde queda la cafeteria",
+    "donde esta el laboratorio",
+    "donde se encuentra el laboratorio",
+    "donde queda el laboratorio",
+    "donde esta mi salon",
+    "donde queda mi salon",
+)
+
+
+def es_consulta_ubicacion(pregunta):
+    texto = normalizar_texto(
+        str(pregunta)
+    ).strip(" ¿?¡!.,;:")
+
+    if any(
+        texto.startswith(consulta)
+        for consulta in CONSULTAS_UBICACION_ESCOLAR
+    ):
+        return False
+
+    return any(
+        re.search(patron, texto)
+        for patron in PATRONES_CONSULTA_UBICACION
+    )
+
+
+def extraer_busqueda_ubicacion(pregunta):
+    texto = str(pregunta).strip(" ¿?¡!.,;:")
+    patrones = (
+        (
+            r"^d[oó]nde\s+(?:est[aá]|se encuentra|queda)\s+"
+            r"(?:ubicad[oa]\s+)?(?:el|la|los|las)?\s*(.+)$"
+        ),
+        (
+            r"^(?:cu[aá]les?\s+son\s+las?\s+)?"
+            r"(?:direcci[oó]n|ubicaci[oó]n|coordenadas)\s+de\s+"
+            r"(?:el|la|los|las)?\s*(.+)$"
+        ),
+        r"^(?:ubica|localiza)\s+(?:el|la|los|las)?\s*(.+)$",
+        r"^busca\s+(.+)$",
+    )
+
+    for patron in patrones:
+        coincidencia = re.match(
+            patron,
+            texto,
+            flags=re.IGNORECASE,
+        )
+
+        if coincidencia:
+            busqueda = coincidencia.group(1).strip(
+                " ¿?¡!.,;:"
+            )
+
+            if re.match(
+                r"^busca\s+",
+                texto,
+                flags=re.IGNORECASE,
+            ):
+                busqueda = re.sub(
+                    r"\s+en\s+",
+                    ", ",
+                    busqueda,
+                    count=1,
+                    flags=re.IGNORECASE,
+                )
+
+            return busqueda
+
+    return ""
+
+
+def procesar_consulta_ubicacion(
+    pregunta,
+    estudiante,
+    contexto=None,
+):
+    busqueda = extraer_busqueda_ubicacion(pregunta)
+    tipo = "externa"
+    categoria = "ubicacion"
+
+    try:
+        resultado = buscar_ubicacion(busqueda)
+        respuesta = formatear_resultado_ubicacion(
+            resultado
+        )
+        confianza = 1.0
+
+        if contexto is not None:
+            contexto["ultima_categoria"] = categoria
+            contexto["ultimo_tema"] = resultado["nombre"]
+            contexto["ultima_intencion"] = "ubicacion"
+            contexto["ultima_pregunta"] = pregunta
+
+    except ErrorConsultaUbicacion as error:
         respuesta = str(error)
         confianza = 0.0
 
